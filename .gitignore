@@ -1,0 +1,15 @@
+# Ambienti virtuali
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE specifiche (PyCharm)
+.idea/
+
+# Dataset pesanti o log
+*.csv
+*.log
