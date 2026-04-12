@@ -6,10 +6,11 @@ import argparse
 from heuristic_model import heuristic_model
 from utils.utility import *
 
-# import nn_model
+import nn_model.nn_model_torch as nn_model
 
 
-GESTURE = ['OPEN PALM', 'VICTORY', 'CLOSED FIST', 'POINTING UP', 'NO GESTURE']
+GESTURE = ['CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK', 'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK',
+                'STOP', 'THREE', 'TWO']
 HEURISTIC = 0
 NN = 1
 
@@ -19,21 +20,22 @@ if __name__ == '__main__':
     #                     help="Type of classifier: Heuristic (0), Neural Network (1)",
     #                     choices=[0, 1])
     # parser.add_argument("w", type=int, help="Frame width")
-    # parser.add_argument("s", type=int, help="Frame height")
-    #
+    # parser.add_argument("ht", type=int, help="Frame height")
+
     # args = parser.parse_args()
 
     mode = 0
 
     # model_type = args.t
-    model_type = 0
     # frame_width = args.w
     # frame_height = args.s
+    model_type = 1
     frame_width = 600
     frame_height = 600
 
     heuristic_classifier = heuristic_model.HeuristicClassifier((frame_width, frame_height))
-    # nn_classifier = nn_model.NNClassifier()
+    nn_classifier = nn_model.GestureClassifierNN()
+    nn_classifier.load("./nn_model/gesture_nn_model.pth")
 
     # Initialize hand class and store it into a variable
     mp_hands = mp.solutions.hands
@@ -42,7 +44,7 @@ if __name__ == '__main__':
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
 
     with mp_hands.Hands(
             max_num_hands=2,
@@ -100,10 +102,11 @@ if __name__ == '__main__':
                         logging_csv(number, mode, norm_landmarks)
                         frame = draw_info(frame, mode, number)
 
-                        # gesture_code = nn_classifier.predict(norm_landmarks)
+                        gesture_code = nn_classifier.predict(norm_landmarks)
 
                     brec = bounding_rec(landmarks)
                     frame = draw_info_text(frame, brec, handedness, GESTURE[gesture_code])
+                    print(f"Predicted gesture: {GESTURE[gesture_code]}")
 
                     cv2.imshow('Hand Image', frame)
 
