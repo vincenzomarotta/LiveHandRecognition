@@ -5,6 +5,8 @@ from torch.utils.data import TensorDataset, DataLoader
 from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 import time
+import csv
+
 from nn_model.load_and_plot import *
 import os
 
@@ -13,9 +15,13 @@ TRAIN_FILE = os.path.join(project_root, "dataset", "train_keypoint.csv")
 VAL_FILE = os.path.join(project_root, "dataset", "val_keypoint.csv")
 TEST_FILE = os.path.join(project_root, "dataset", "test_keypoint.csv")
 
-NOMI_GESTURE = ['CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK', 'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK',
-                'STOP', 'THREE', 'TWO']
+GESTURE_NAMES = [
+    'CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK',
+    'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK', 'STOP', 'THREE', 'TWO', 'NO GESTURE'
+]
 
+INPUT_DIM = 73
+NUM_CLASSES = 15
 
 class PyTorchGestureNN(nn.Module):
     """Definizione vera e propria del modello in PyTorch"""
@@ -37,7 +43,7 @@ class PyTorchGestureNN(nn.Module):
 
 
 class GestureClassifierNN:
-    def __init__(self, input_dim=63, num_classes=14, learning_rate=0.001):
+    def __init__(self, input_dim=INPUT_DIM, num_classes=NUM_CLASSES, learning_rate=0.001):
         """
         Inizializza la classe e sposta il modello sulla GPU (se disponibile).
         """
@@ -146,34 +152,107 @@ class GestureClassifierNN:
         history_obj.history = self.history_dict
         return history_obj
 
-    def evaluate_model(self, X_test, y_test):
-        """Valuta il modello sul test set misurando i tempi di inferenza."""
+    # def evaluate_model(self, X_test, y_test):
+    #     """Valuta il modello sul test set misurando i tempi di inferenza."""
+    #     print("--- Avvio Valutazione ---")
+    #
+    #     # Sposta i dati sulla GPU/CPU corretta
+    #     X_test_t = torch.tensor(X_test, dtype=torch.float32).to(self.device)
+    #     self.model.eval()
+    #
+    #     start_inf_time = time.time()
+    #     with torch.no_grad():
+    #         outputs = self.model(X_test_t)
+    #     end_inf_time = time.time()
+    #
+    #     total_inf_time_ms = (end_inf_time - start_inf_time) * 1000
+    #     avg_inf_time_ms = total_inf_time_ms / len(X_test)
+    #
+    #     # Le probabilità maggiori (argmax)
+    #     _, y_pred_t = torch.max(outputs, 1)
+    #     y_pred = y_pred_t.cpu().numpy()  # Riporta i dati sulla CPU per sklearn
+    #
+    #     report = classification_report(y_test, y_pred, zero_division=0)
+    #     cm = confusion_matrix(y_test, y_pred)
+    #
+    #     print(f"Tempo di inferenza medio: {avg_inf_time_ms:.4f} ms per frame")
+    #     print("\nReport di Classificazione (Include Recall per ogni classe):\n", report)
+    #
+    #     return {
+    #         "average_inference_time_ms": avg_inf_time_ms,
+    #         "classification_report": report,
+    #         "confusion_matrix": cm,
+    #         "predictions": y_pred
+    #     }
+
+    def evaluate_model(self, X_test, y_test,
+                       output_csv="test_results_nn.csv",
+                       metrics_csv="metrics_summary_nn.csv"):
+        """
+        Valuta il modello sul test set.
+        Produce:
+        - CSV per-immagine con is_correct e latency_ms (per McNemar)
+        - CSV metriche aggregate (precision/recall/f1 + latenza media)
+        """
         print("--- Avvio Valutazione ---")
 
-        # Sposta i dati sulla GPU/CPU corretta
         X_test_t = torch.tensor(X_test, dtype=torch.float32).to(self.device)
         self.model.eval()
 
-        start_inf_time = time.time()
+        # ── Inferenza per-sample per latenza realistica ───────────────────────
+        # La NN su landmark è così piccola che un batch unico non è rappresentativo
+        # della latenza reale nel loop webcam — misuriamo sample per sample
+        latencies = []
+        all_outputs = []
+
         with torch.no_grad():
-            outputs = self.model(X_test_t)
-        end_inf_time = time.time()
+            for i in range(len(X_test_t)):
+                sample = X_test_t[i].unsqueeze(0)  # shape (1, input_dim)
+                t0 = time.perf_counter()
+                out = self.model(sample)
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                latencies.append((time.perf_counter() - t0) * 1000)
+                all_outputs.append(out)
 
-        total_inf_time_ms = (end_inf_time - start_inf_time) * 1000
-        avg_inf_time_ms = total_inf_time_ms / len(X_test)
+        outputs = torch.cat(all_outputs, dim=0)
+        y_pred = outputs.argmax(1).cpu().numpy()
+        avg_lat = float(np.mean(latencies))
 
-        # Le probabilità maggiori (argmax)
-        _, y_pred_t = torch.max(outputs, 1)
-        y_pred = y_pred_t.cpu().numpy()  # Riporta i dati sulla CPU per sklearn
+        print(f"Latenza media per frame: {avg_lat:.4f} ms")
 
-        report = classification_report(y_test, y_pred, zero_division=0)
+        # ── CSV per-immagine (McNemar) ────────────────────────────────────────
+        results = [
+            {
+                'sample_index': i,
+                'true_label': int(y_test[i]),
+                'pred_label': int(y_pred[i]),
+                'is_correct': 1 if y_pred[i] == y_test[i] else 0,
+                'latency_ms': round(latencies[i], 4)
+            }
+            for i in range(len(y_test))
+        ]
+        with open(output_csv, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=results[0].keys())
+            writer.writeheader()
+            writer.writerows(results)
+        print(f"[OK] {len(results)} risultati per-immagine salvati in: {output_csv}")
+
+        # ── CSV metriche aggregate ────────────────────────────────────────────
+        save_metrics_csv(
+            y_test, y_pred,
+            class_names=GESTURE_NAMES,
+            avg_latency_ms=avg_lat,
+            output_csv=metrics_csv
+        )
+
+        report = classification_report(y_test, y_pred,
+                                       target_names=GESTURE_NAMES, zero_division=0)
         cm = confusion_matrix(y_test, y_pred)
-
-        print(f"Tempo di inferenza medio: {avg_inf_time_ms:.4f} ms per frame")
-        print("\nReport di Classificazione (Include Recall per ogni classe):\n", report)
+        print("\nReport di Classificazione:\n", report)
 
         return {
-            "average_inference_time_ms": avg_inf_time_ms,
+            "average_inference_time_ms": avg_lat,
             "classification_report": report,
             "confusion_matrix": cm,
             "predictions": y_pred
@@ -219,39 +298,35 @@ class GestureClassifierNN:
 
 
 if __name__ == "__main__":
-    # Verifica GPU in PyTorch
     if not torch.cuda.is_available():
-        print("Errore: Nessuna GPU compatibile con CUDA rilevata.")
+        print("Errore: Nessuna GPU CUDA rilevata.")
         exit(-1)
 
-    print(f"GPU rilevata: {torch.cuda.get_device_name(0)}")
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
 
-    # Caricamento dei dati
     X_train, y_train = load_dataset(TRAIN_FILE, label_column_index=0)
     X_val, y_val = load_dataset(VAL_FILE, label_column_index=0)
     X_test, y_test = load_dataset(TEST_FILE, label_column_index=0)
 
-    # Inizializzazione modello
     classifier = GestureClassifierNN()
     classifier.summary()
 
-    # Addestramento
     history = classifier.train(
         X_train, y_train,
-        X_val, y_val,
-        epochs=80,
-        batch_size=32
+        X_val,   y_val,
+        epochs=80, batch_size=32
     )
 
-    # Plot (La tua funzione Keras continuerà a funzionare!)
-    plot_training_history(history)
+    plot_training_history(history, save_path="plots/nn_training_history.png")
 
-    # Valutazione
-    risultati = classifier.evaluate_model(X_test, y_test)
-    plot_confusion_matrix(risultati["confusion_matrix"], NOMI_GESTURE)
+    risultati = classifier.evaluate_model(
+        X_test, y_test,
+        output_csv="test_results_nn.csv",
+        metrics_csv="metrics_summary_nn.csv"
+    )
 
-    # Salvataggio Modello (.pth o .pt sono gli standard per PyTorch)
-    salvataggio_path = "gesture_nn_model.pth"
-    classifier.save(salvataggio_path)
-    print(f"\nModello salvato con successo in: {salvataggio_path}")
-    print("=== PIPELINE COMPLETATA ===")
+    plot_confusion_matrix(risultati["confusion_matrix"], GESTURE_NAMES,
+                          save_path="plots/nn_confusion_matrix.png")
+
+    classifier.save("gesture_nn_model.pth")
+    print("\nModello salvato. === PIPELINE COMPLETATA ===")

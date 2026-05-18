@@ -11,7 +11,7 @@ TRAIN_FILE = os.path.join(project_root, "dataset", "train_keypoint.csv")
 VAL_FILE = os.path.join(project_root, "dataset", "val_keypoint.csv")
 TEST_FILE = os.path.join(project_root, "dataset", "test_keypoint.csv")
 
-NOMI_GESTURE = ['CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK', 'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK', 'STOP', 'THREE', 'TWO']
+NOMI_GESTURE = ['CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK', 'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK', 'STOP', 'THREE', 'TWO', 'NO GESTURE']
 
 class GestureClassifierNN:
     def __init__(self, input_dim=42, num_classes=14, learning_rate=0.001):
