@@ -8,9 +8,9 @@ from torchvision import transforms
 from PIL import Image
 
 # Import dei tuoi modelli e utility
-from nn_model.nn_model_torch import GestureClassifierNN
+from nn_model.nn_model import GestureClassifierNN
 from utils.utility import calculate_finger_angles
-from cnn_model.cnn_model_2d import GestureClassifierCNN  # Il file dove hai messo la CNN MobileNet
+from cnn_model.cnn_model import GestureClassifierCNN  # Il file dove hai messo la CNN MobileNet
 from utils.utility import pre_process_landmark, normalize_wrt_keypoint
 
 import mediapipe as mp
@@ -19,8 +19,8 @@ import mediapipe as mp
 project_root = os.path.dirname(os.path.abspath(__file__))
 TEST_DIR = os.path.join(project_root, 'dataset', 'hagrid_dataset_split', 'test')
 
-NN_WEIGHTS = os.path.join(project_root, "nn_model", "gesture_nn_model.pth")
-CNN_WEIGHTS = os.path.join(project_root, "cnn_model", "gesture_cnn_finetuned.pth")
+NN_WEIGHTS = os.path.join(project_root, "../nn_model", "gesture_nn_model.pth")
+CNN_WEIGHTS = os.path.join(project_root, "../cnn_model", "gesture_cnn_finetuned.pth")
 OUTPUT_CSV = os.path.join(project_root, "head_to_head_results.csv")
 
 GESTURE_NAMES = [

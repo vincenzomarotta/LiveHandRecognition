@@ -3,7 +3,7 @@ import time
 
 from heuristic_model import heuristic_model
 from utils.utility import *
-import nn_model.nn_model_torch as nn_model
+import nn_model.nn_model as nn_model
 
 GESTURE = [
     'CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK',

@@ -23,11 +23,11 @@ GESTURE_NAMES = [
 INPUT_DIM = 73
 NUM_CLASSES = 15
 
-class PyTorchGestureNN(nn.Module):
+class GestureNN(nn.Module):
     """Definizione vera e propria del modello in PyTorch"""
 
     def __init__(self, input_dim, num_classes):
-        super(PyTorchGestureNN, self).__init__()
+        super(GestureNN, self).__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, 50),
             nn.ReLU(),
@@ -48,7 +48,7 @@ class GestureClassifierNN:
         Inizializza la classe e sposta il modello sulla GPU (se disponibile).
         """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = PyTorchGestureNN(input_dim, num_classes).to(self.device)
+        self.model = GestureNN(input_dim, num_classes).to(self.device)
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.history_dict = {'accuracy': [], 'val_accuracy': [], 'loss': [], 'val_loss': []}
