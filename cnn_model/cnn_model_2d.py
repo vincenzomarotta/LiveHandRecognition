@@ -11,7 +11,7 @@ import time
 import os
 import copy
 import csv
-from load_and_plot import *
+from cnn_model.load_and_plot import *
 
 # --- CONFIGURAZIONE ---
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
