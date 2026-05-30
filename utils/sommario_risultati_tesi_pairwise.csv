@@ -1,0 +1,28 @@
+﻿Categoria,Metrica,Valore,Note
+Scontro: CNN vs NN (Su Mani Rilevate),Accuratezza CNN,94.67%,
+Scontro: CNN vs NN (Su Mani Rilevate),Accuratezza NN,90.82%,
+Scontro: CNN vs NN (Su Mani Rilevate),Solo CNN Corretto (b),3128,Disaccordo pro CNN
+Scontro: CNN vs NN (Su Mani Rilevate),Solo NN Corretto (c),1599,Disaccordo pro NN
+Scontro: CNN vs NN (Su Mani Rilevate),McNemar: P-Value,0.0000000000,< 0.05 significa divario reale
+Scontro: CNN vs NN (Su Mani Rilevate),Esito Scontro,Vince CNN,
+Scontro: CNN vs Euristico (Su Mani Rilevate),Accuratezza CNN,94.67%,
+Scontro: CNN vs Euristico (Su Mani Rilevate),Accuratezza Euristico,57.61%,
+Scontro: CNN vs Euristico (Su Mani Rilevate),Solo CNN Corretto (b),15964,Disaccordo pro CNN
+Scontro: CNN vs Euristico (Su Mani Rilevate),Solo Euristico Corretto (c),1230,Disaccordo pro Euristico
+Scontro: CNN vs Euristico (Su Mani Rilevate),McNemar: P-Value,0.0000000000,< 0.05 significa divario reale
+Scontro: CNN vs Euristico (Su Mani Rilevate),Esito Scontro,Vince CNN,
+Scontro: NN vs Euristico (Su Mani Rilevate),Accuratezza NN,90.82%,
+Scontro: NN vs Euristico (Su Mani Rilevate),Accuratezza Euristico,57.61%,
+Scontro: NN vs Euristico (Su Mani Rilevate),Solo NN Corretto (b),13530,Disaccordo pro NN
+Scontro: NN vs Euristico (Su Mani Rilevate),Solo Euristico Corretto (c),325,Disaccordo pro Euristico
+Scontro: NN vs Euristico (Su Mani Rilevate),McNemar: P-Value,0.0000000000,< 0.05 significa divario reale
+Scontro: NN vs Euristico (Su Mani Rilevate),Esito Scontro,Vince NN,
+Efficienza Spaziale (Memoria),Peso Modello Euristico,0.0000 MB,Nessun parametro appreso
+Efficienza Spaziale (Memoria),Peso Modello NN,0.0401 MB,Rete 1D su Keypoints
+Efficienza Spaziale (Memoria),Peso Modello CNN,5.9837 MB,MobileNetV3 Fine-Tuned
+Efficienza Temporale (Velocità),Latenza Media Euristico,8.872 ms,Esecuzione regole if-else (CPU)
+Efficienza Temporale (Velocità),Latenza Media NN,0.270 ms,Tempo elaborazione rete (CPU/GPU)
+Efficienza Temporale (Velocità),Latenza Media CNN,4.477 ms,Tempo elaborazione End-to-End (GPU)
+,,,
+,,,
+"L'analisi dei tempi di inferenza ha rivelato un risultato controintuitivo: il classificatore euristico (basato su regole algoritmiche classiche) è risultato essere il modello più lento ($~8.8$ ms), nonostante l'assenza di parametri appresi. Questo collo di bottiglia è imputabile all'uso di operazioni geometriche complesse, come il calcolo della matrice di omografia tramite OpenCV, eseguite sequenzialmente su CPU.Al contrario, la Rete Neurale 1D (NN) si è dimostrata estremamente rapida ($~0.27$ ms). Svincolandosi dall'elaborazione spaziale dell'immagine e operando esclusivamente su vettori di features geometriche pre-estratte, la NN trasforma il riconoscimento dei gesti in un problema di algebra lineare basilare, ottimizzato a basso livello dal framework PyTorch.Infine, la CNN End-to-End, pur elaborando l'intera matrice di pixel ( $224 \times 224 \times 3$), mantiene una latenza competitiva ($~4.4$ ms) grazie allo scarico computazionale sulle unità di elaborazione parallela della GPU (NVIDIA RTX 4050). Si conferma tuttavia che l'approccio NN su keypoint risulta di un ordine di grandezza più efficiente e rappresenta lo stato dell'arte per implementazioni Real-Time su dispositivi a bassissimo consumo energetico.",,,
