@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hand Gesture Recognition — Computer Vision</title>
+
+<!-- ===========================================================
+     FONTS
+     Bricolage Grotesque = display / headings
+     Hanken Grotesk      = body copy
+     JetBrains Mono       = labels, HUD, numbers
+     Fraunces             = math / formula (serif italic, look LaTeX)
+     =========================================================== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,600&display=swap" rel="stylesheet">
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+/* ===========================================================
+   THEME TOKENS
+   =========================================================== */
+:root{
+  --ink:#0C1320; --ink2:#121C2E; --ink3:#18243A; --line:rgba(255,255,255,.10);
+  --fog:#CFDDEC; --fog2:#8AA0B8; --fog3:#5E7088; --white:#FFFFFF;
+  --terra:#F2956F;  /* Euristico  */
+  --green:#46C58A;  /* NN keypoint */
+  --blue:#4C9BF0;   /* CNN         */
+  --stage-bg:#05080f; --slide-bg:var(--ink);
+  --font-display:'Bricolage Grotesque',sans-serif;
+  --font-body:'Hanken Grotesk',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-math:'Fraunces',serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+
+/* === FIXED 16:9 STAGE (viewport-base.css) === */
+html,body{ width:100%; height:100%; margin:0; overflow:hidden; background:var(--stage-bg,#000); }
+.deck-viewport{ position:fixed; inset:0; overflow:hidden; background:var(--stage-bg,#000); }
+.deck-stage{ position:absolute; left:0; top:0; width:1920px; height:1080px; overflow:hidden;
+  transform-origin:0 0; background:var(--slide-bg,#fff); }
+.slide{ position:absolute; inset:0; width:1920px; height:1080px; overflow:hidden; display:block;
+  visibility:hidden; opacity:0; pointer-events:none; background:var(--slide-bg,#fff); }
+.slide.active,.slide.visible{ visibility:visible; opacity:1; pointer-events:auto; z-index:1; }
+img,video,canvas,svg{ max-width:100%; max-height:100%; }
+.deck-controls{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:1000; }
+@media print{
+  html,body{ width:1920px; height:auto; overflow:visible; background:#fff; }
+  .deck-viewport{ position:static; overflow:visible; background:#fff; }
+  .deck-stage{ position:static; width:auto; height:auto; transform:none !important; background:none; }
+  .slide{ position:relative; display:block !important; visibility:visible !important; opacity:1 !important;
+    pointer-events:auto !important; width:1920px; height:1080px; break-after:page; page-break-after:always; }
+  .slide:last-child{ break-after:auto; page-break-after:auto; }
+  .deck-controls{ display:none !important; }
+}
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after{ animation-duration:.01ms !important; transition-duration:.2s !important; } }
+
+/* ===========================================================
+   SHARED SLIDE CHROME
+   =========================================================== */
+.slide{ font-family:var(--font-body); color:var(--fog);
+  background:
+    radial-gradient(ellipse at 82% -5%, rgba(76,155,240,.14), transparent 52%),
+    radial-gradient(ellipse at -5% 105%, rgba(70,197,138,.10), transparent 48%),
+    var(--ink);
+  padding:90px 110px; }
+.slide::before{ content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:80px 80px;
+  -webkit-mask-image:radial-gradient(circle at 60% 42%,#000 28%,transparent 80%);
+          mask-image:radial-gradient(circle at 60% 42%,#000 28%,transparent 80%); }
+.slide > *{ position:relative; z-index:1; }
+
+.hud{ display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--font-mono); font-size:22px; color:var(--fog3); letter-spacing:.08em; }
+.hud .dot{ color:var(--green); }
+.kicker{ font-family:var(--font-mono); font-weight:700; font-size:23px; letter-spacing:.26em;
+  text-transform:uppercase; color:var(--terra); margin-top:46px; }
+h2{ font-family:var(--font-display); font-weight:800; letter-spacing:-.02em;
+  font-size:80px; line-height:1.0; color:var(--white); margin-top:12px; max-width:1560px; }
+h2 .ac{ color:var(--blue); } h2 .ag{ color:var(--green); } h2 .at{ color:var(--terra); }
+
+/* discursive prose */
+.prose{ margin-top:34px; max-width:1480px; font-size:34px; line-height:1.5; color:var(--fog); font-weight:400; }
+.prose.tight{ font-size:30px; }
+.prose b{ color:var(--white); font-weight:700; }
+.prose .hl{ color:var(--blue); font-weight:600; }
+.prose .hlg{ color:var(--green); font-weight:600; }
+.prose .hlt{ color:var(--terra); font-weight:600; }
+
+/* light bullet list — used sparingly */
+ul.points{ list-style:none; margin-top:34px; max-width:1560px; }
+ul.points li{ position:relative; padding-left:48px; font-size:34px; line-height:1.34;
+  color:var(--fog); margin-bottom:24px; font-weight:500; }
+ul.points li::before{ content:"//"; position:absolute; left:0; top:2px;
+  font-family:var(--font-mono); font-weight:700; font-size:28px; color:var(--green); }
+ul.points li.b1::before{ color:var(--terra); } ul.points li.b3::before{ color:var(--blue); }
+ul.points li small{ display:block; font-size:25px; color:var(--fog2); font-weight:400; margin-top:6px; }
+ul.points li b{ color:var(--white); }
+
+/* concept note (theory written directly, no label) */
+.note{ position:absolute; left:110px; right:110px; bottom:76px;
+  background:linear-gradient(120deg, rgba(76,155,240,.12), rgba(70,197,138,.05));
+  border-left:6px solid var(--blue); border-radius:0 14px 14px 0; padding:26px 36px; }
+.note p{ font-size:26px; line-height:1.42; color:var(--fog); }
+.note p b{ color:var(--white); } .note .em{ color:var(--blue); font-weight:600; }
+.note .ntitle{ display:block; font-family:var(--font-mono); font-weight:700; font-size:19px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--blue); margin-bottom:9px; }
+.note .ntitle::before{ content:"▸ "; }
+
+code{ font-family:var(--font-mono); font-size:.84em; background:var(--ink3); padding:2px 11px;
+  border-radius:7px; color:var(--blue); }
+
+/* image cards */
+.imgwrap{ margin-top:30px; display:flex; align-items:center; justify-content:center; }
+.card{ background:#fff; border-radius:18px; padding:22px; box-shadow:0 24px 70px rgba(0,0,0,.5);
+  border:1px solid rgba(255,255,255,.14); }
+.card img{ display:block; border-radius:6px; }
+.caption{ margin-top:18px; text-align:center; font-family:var(--font-mono); font-size:24px;
+  color:var(--fog2); line-height:1.4; }
+.caption b{ color:var(--fog); }
+.cardrow{ margin-top:36px; display:flex; gap:34px; justify-content:center; align-items:flex-start; }
+.cardrow .card{ padding:18px; }
+.cardrow figcaption{ margin-top:14px; text-align:center; font-family:var(--font-mono); font-size:24px; font-weight:700; }
+
+/* generic column grid */
+.cols{ display:grid; gap:36px; margin-top:44px; }
+.cols.c2{ grid-template-columns:1fr 1fr; } .cols.c3{ grid-template-columns:repeat(3,1fr); }
+.colcard{ background:var(--ink2); border:1px solid var(--line); border-radius:16px; padding:34px 32px; }
+.colcard .ico{ width:60px; height:60px; margin-bottom:18px; }
+.colcard h3{ font-family:var(--font-display); font-weight:700; font-size:34px; color:#fff; margin-bottom:12px; }
+.colcard p{ font-size:25px; line-height:1.42; color:var(--fog2); }
+.colcard p b{ color:var(--fog); }
+.colcard.e{ border-top:4px solid var(--terra); } .colcard.n{ border-top:4px solid var(--green); }
+.colcard.c{ border-top:4px solid var(--blue); }
+.tagline{ font-family:var(--font-mono); font-size:21px; letter-spacing:.04em; margin-top:16px; }
+.colcard.e .tagline{ color:var(--terra); } .colcard.n .tagline{ color:var(--green); } .colcard.c .tagline{ color:var(--blue); }
+
+/* two-column: text | visual */
+.split{ display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center; margin-top:40px; }
+.split.vtext{ align-items:start; }
+
+/* small example table */
+.extable{ border-collapse:collapse; font-family:var(--font-mono); font-size:26px; margin-top:6px;
+  background:var(--ink2); border-radius:12px; overflow:hidden; }
+.extable caption{ caption-side:top; text-align:left; font-family:var(--font-body); font-size:23px;
+  color:var(--fog2); margin-bottom:12px; }
+.extable th,.extable td{ padding:16px 30px; text-align:center; border-bottom:1px solid var(--line); }
+.extable th{ color:#06101c; background:var(--green); font-weight:700; letter-spacing:.04em; }
+.extable td:first-child,.extable th:first-child{ text-align:left; color:var(--fog2); }
+.extable td{ color:var(--fog); }
+.extable tr:last-child td{ border-bottom:none; }
+.exnote{ font-family:var(--font-mono); font-size:20px; color:var(--fog3); margin-top:14px; }
+
+/* stat row */
+.stats{ display:flex; gap:46px; margin-top:42px; }
+.stat .v{ font-family:var(--font-display); font-weight:800; font-size:74px; line-height:1; }
+.stat .l{ font-family:var(--font-mono); font-size:22px; color:var(--fog2); margin-top:8px; letter-spacing:.04em; }
+.stat.e .v{ color:var(--terra); } .stat.n .v{ color:var(--green); } .stat.c .v{ color:var(--blue); }
+
+/* placeholder boxes (dataset samples / demo gifs to drop in) */
+.ph{ position:relative; border:2px dashed rgba(138,160,184,.4); border-radius:14px; background:var(--ink2);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--fog3);
+  font-family:var(--font-mono); text-align:center; overflow:hidden; }
+.ph .picon{ font-size:46px; margin-bottom:12px; opacity:.7; }
+.ph .plabel{ font-size:21px; letter-spacing:.04em; }
+.ph .ppath{ font-size:17px; color:var(--fog3); margin-top:8px; opacity:.7; }
+.ph img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+
+/* model chips */
+.chips{ display:flex; gap:16px; }
+.chip{ padding:11px 28px; border-radius:40px; color:#06101c; font-family:var(--font-mono);
+  font-weight:700; font-size:24px; }
+.chip.e{ background:var(--terra); } .chip.n{ background:var(--green); } .chip.c{ background:var(--blue); }
+
+/* formula (LaTeX-like) */
+.formula{ font-family:var(--font-math); font-style:italic; font-size:46px; color:#fff;
+  display:inline-flex; align-items:center; gap:18px; }
+.frac{ display:inline-flex; flex-direction:column; text-align:center; vertical-align:middle; }
+.frac .num{ padding:0 14px 6px; border-bottom:2px solid var(--fog); }
+.frac .den{ padding:6px 14px 0; }
+.cite{ font-family:var(--font-mono); font-size:19px; color:var(--fog3); margin-top:18px; }
+.cite b{ color:var(--fog2); }
+
+/* gesture vocabulary list (all-gestures slide) */
+.gcat{ font-family:var(--font-mono); font-weight:700; font-size:21px; letter-spacing:.14em;
+  text-transform:uppercase; margin-bottom:18px; }
+.gcat.e{ color:var(--terra); } .gcat.n{ color:var(--green); } .gcat.c{ color:var(--blue); }
+.glist{ list-style:none; }
+.glist li{ display:flex; gap:16px; align-items:baseline; font-size:23px; line-height:1.28;
+  color:var(--fog2); margin-bottom:18px; }
+.glist li .ge{ font-size:32px; line-height:1; flex:0 0 46px; text-align:center; }
+.glist li b{ color:#fff; font-family:var(--font-mono); font-size:20px; font-weight:700; }
+.glist li span.gd{ color:var(--fog2); }
+
+/* compact + signature variant of summary table (thresholds slide) */
+.summary.compact th,.summary.compact td{ padding:9px 18px; font-size:22px; }
+.summary.compact td:first-child,.summary.compact th:first-child{ font-size:22px; }
+.sig{ font-family:var(--font-mono); font-size:25px; letter-spacing:.16em; font-style:normal; white-space:nowrap; }
+.sig i{ font-style:normal; }
+.sig .d{ color:var(--green); }   /* disteso */
+.sig .p{ color:var(--fog3); }    /* piegato  */
+.sig .c{ color:var(--terra); }   /* incrociato */
+
+/* ===========================================================
+   TITLE SLIDE
+   =========================================================== */
+.title-slide{ padding:0; }
+.title-slide .grid2{ position:absolute; inset:0; z-index:0;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:80px 80px;
+  -webkit-mask-image:radial-gradient(circle at 60% 45%,#000 30%,transparent 78%);
+          mask-image:radial-gradient(circle at 60% 45%,#000 30%,transparent 78%); }
+.title-slide .t-hud{ position:absolute; left:90px; top:80px; font-family:var(--font-mono);
+  font-size:24px; color:var(--fog3); letter-spacing:.1em; }
+.title-slide .t-hud .dot{ color:var(--green); }
+.title-slide .t-author{ position:absolute; right:90px; top:80px; font-family:var(--font-mono);
+  font-size:24px; color:var(--fog); letter-spacing:.06em; text-align:right; }
+.title-slide .t-author b{ color:#fff; } .title-slide .t-author span{ color:var(--blue); }
+.title-slide .t-tag{ position:absolute; left:92px; top:296px; font-family:var(--font-mono);
+  font-weight:700; font-size:27px; letter-spacing:.3em; color:var(--terra); text-transform:uppercase; }
+.title-slide h1{ position:absolute; left:84px; top:356px; font-family:var(--font-display);
+  font-weight:800; font-size:212px; line-height:.86; letter-spacing:-.03em; color:#fff; }
+.title-slide h1 span{ color:var(--blue); }
+.title-slide .t-sub{ position:absolute; left:92px; top:792px; font-family:var(--font-mono);
+  font-size:30px; color:var(--fog); max-width:1250px; line-height:1.45; }
+.title-slide .t-bar{ position:absolute; left:92px; bottom:120px; display:flex; width:1180px;
+  height:18px; border-radius:9px; overflow:hidden; }
+.title-slide .t-bar i{ display:block; height:100%; }
+.title-slide .seg1{ flex:0 0 22%; background:var(--terra); }
+.title-slide .seg2{ flex:0 0 35%; background:var(--green); }
+.title-slide .seg3{ flex:0 0 43%; background:var(--blue); }
+.title-slide .t-legend{ position:absolute; left:92px; bottom:68px; display:flex; gap:46px;
+  font-family:var(--font-mono); font-size:22px; color:var(--fog2); }
+.title-slide .l1{ color:var(--terra); } .title-slide .l2{ color:var(--green); } .title-slide .l3{ color:var(--blue); }
+.title-slide .t-side{ position:absolute; right:90px; bottom:120px; text-align:right;
+  font-family:var(--font-mono); font-size:24px; color:var(--fog3); line-height:1.8; }
+.title-slide .t-side b{ color:#fff; }
+
+/* ===========================================================
+   SECTION DIVIDER
+   =========================================================== */
+.divider{ display:flex; flex-direction:column; justify-content:center; padding-left:140px; }
+.divider .dnum{ font-family:var(--font-mono); font-weight:700; font-size:30px; letter-spacing:.3em;
+  text-transform:uppercase; color:var(--blue); }
+.divider .dbar{ width:120px; height:6px; background:var(--terra); margin:34px 0; }
+.divider h2{ font-size:138px; max-width:1500px; }
+.divider .dsub{ font-family:var(--font-body); font-size:34px; color:var(--fog2); margin-top:26px; max-width:1100px; }
+.divider .dghost{ position:absolute; right:80px; bottom:30px; font-family:var(--font-display);
+  font-weight:800; font-size:520px; line-height:.8; color:rgba(76,155,240,.07); z-index:0; }
+
+/* summary table */
+table.summary{ margin-top:46px; width:100%; border-collapse:collapse; font-size:29px; }
+table.summary th, table.summary td{ padding:20px 24px; text-align:center; border-bottom:1px solid var(--line); }
+table.summary th{ font-family:var(--font-mono); font-weight:700; text-transform:uppercase; letter-spacing:.05em; font-size:24px; }
+table.summary thead th{ color:#06101c; }
+table.summary thead th.e{ background:var(--terra); } table.summary thead th.n{ background:var(--green); }
+table.summary thead th.c{ background:var(--blue); } table.summary thead th.lbl{ background:var(--ink3); color:var(--fog); }
+table.summary td:first-child, table.summary th:first-child{ text-align:left; font-family:var(--font-mono); font-weight:700; font-size:25px; color:var(--fog2); }
+table.summary tbody tr:nth-child(even){ background:rgba(255,255,255,.03); }
+table.summary td b{ color:var(--white); }
+.win{ color:var(--green); font-weight:700; }
+
+/* closing slide */
+.closing{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.closing .ctag{ font-family:var(--font-mono); font-weight:700; font-size:26px; letter-spacing:.4em;
+  text-transform:uppercase; color:var(--terra); margin-bottom:30px; }
+.closing h1{ font-family:var(--font-display); font-weight:800; font-size:184px; line-height:.9;
+  letter-spacing:-.03em; color:#fff; }
+.closing h1 span{ color:var(--blue); }
+.closing .cfoot{ margin-top:48px; font-family:var(--font-mono); font-size:26px; color:var(--fog2); }
+.closing .cfoot b{ color:#fff; } .closing .cfoot span{ color:var(--blue); }
+
+/* ===========================================================
+   REVEAL ANIMATIONS
+   =========================================================== */
+.reveal{ opacity:0; transform:translateY(34px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+.slide.visible .reveal{ opacity:1; transform:translateY(0); }
+.slide.visible .reveal:nth-child(1){ transition-delay:.06s; }
+.slide.visible .reveal:nth-child(2){ transition-delay:.16s; }
+.slide.visible .reveal:nth-child(3){ transition-delay:.26s; }
+.slide.visible .reveal:nth-child(4){ transition-delay:.36s; }
+.slide.visible .reveal:nth-child(5){ transition-delay:.46s; }
+.slide.visible .reveal:nth-child(6){ transition-delay:.56s; }
+ul.points li.reveal{ opacity:0; transform:translateX(-24px); }
+.slide.visible ul.points li.reveal{ opacity:1; transform:translateX(0); }
+
+@keyframes rise{ from{opacity:0;transform:translateY(46px);} to{opacity:1;transform:translateY(0);} }
+@keyframes grow{ from{transform:scaleX(0);} to{transform:scaleX(1);} }
+.title-slide.visible .t-tag,.title-slide.visible h1,.title-slide.visible .t-sub,
+.title-slide.visible .t-legend,.title-slide.visible .t-side,.title-slide.visible .t-hud,.title-slide.visible .t-author{
+  animation:rise .85s var(--ease) both; }
+.title-slide.visible .t-hud,.title-slide.visible .t-author{ animation-delay:.05s; }
+.title-slide.visible .t-tag{ animation-delay:.12s; }
+.title-slide.visible h1{ animation-delay:.26s; }
+.title-slide.visible .t-sub{ animation-delay:.5s; }
+.title-slide.visible .t-legend,.title-slide.visible .t-side{ animation-delay:.7s; }
+.title-slide.visible .t-bar{ transform-origin:left; animation:grow 1s .8s var(--ease) both; }
+
+/* ===========================================================
+   DECK CHROME
+   =========================================================== */
+.progress{ position:fixed; left:0; bottom:0; height:4px; background:var(--blue); z-index:1000;
+  transition:width .4s var(--ease); box-shadow:0 0 14px var(--blue); }
+.pagecount{ position:fixed; right:26px; bottom:20px; z-index:1000; font-family:var(--font-mono);
+  font-size:20px; color:var(--fog3); letter-spacing:.1em; }
+.pagecount b{ color:var(--fog); }
+.hint{ position:fixed; left:26px; bottom:18px; z-index:1000; font-family:var(--font-mono);
+  font-size:17px; color:var(--fog3); opacity:.7; }
+.edit-hotzone{ position:fixed; top:0; left:0; width:80px; height:80px; z-index:10000; cursor:pointer; }
+.edit-toggle{ position:fixed; top:18px; left:18px; z-index:10001; width:52px; height:52px; border-radius:12px;
+  border:1px solid var(--line); background:var(--ink2); color:var(--fog); font-size:24px; cursor:pointer;
+  opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.edit-toggle.show,.edit-toggle.active{ opacity:1; pointer-events:auto; }
+.edit-toggle.active{ background:var(--blue); color:#06101c; border-color:var(--blue); }
+body.editing [contenteditable]{ outline:2px dashed rgba(76,155,240,.6); outline-offset:4px; border-radius:4px; }
+.edit-banner{ position:fixed; top:18px; left:50%; transform:translateX(-50%); z-index:10001;
+  font-family:var(--font-mono); font-size:17px; background:var(--blue); color:#06101c;
+  padding:8px 18px; border-radius:30px; display:none; }
+body.editing .edit-banner{ display:block; }
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+
+    <!-- ============ 1 · TITLE ============ -->
+    <section class="slide title-slide active">
+      <div class="grid2"></div>
+      <div class="t-hud"><span class="dot">●</span> COMPUTER_VISION / hand-pose-classifier · 15 classi</div>
+      <div class="t-author"><b>Vincenzo Marotta</b><br><span>N97000512</span></div>
+      <div class="t-tag">Tre paradigmi a confronto</div>
+      <h1>Hand Gesture<br>Recogni<span>tion</span></h1>
+      <div class="t-sub">// regole geometriche · feature progettate a mano · feature apprese<br>// quanto conta, davvero, imparare dai dati?</div>
+      <div class="t-bar"><i class="seg1"></i><i class="seg2"></i><i class="seg3"></i></div>
+      <div class="t-legend"><span class="l1">■ Euristico</span><span class="l2">■ Rete su keypoint</span><span class="l3">■ CNN</span></div>
+      <div class="t-side">dataset <b>HaGRID</b><br>riconoscimento da<br><b>webcam in tempo reale</b></div>
+    </section>
+
+    <!-- ============ 2 · FILO CONDUTTORE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> INTRO</span><span>Il filo conduttore</span></div>
+      <div class="kicker reveal">Una domanda, tre risposte</div>
+      <h2 class="reveal">Tre modi di riconoscere<br>lo stesso gesto</h2>
+      <p class="prose reveal">Lo stesso problema viene affrontato con tre filosofie diverse, che ripercorrono l'evoluzione storica della visione artificiale: dalle regole <span class="hlt">scritte a mano</span>, alle feature <span class="hlg">progettate dall'uomo</span> ma classificate da una rete, fino alle feature <span class="hl">apprese</span> direttamente dai pixel.</p>
+      <div class="cols c3">
+        <div class="colcard e reveal"><h3>Euristico</h3><p>Regole geometriche esplicite: misuro distanze e angoli della mano e decido con una serie di condizioni. <b>Nessun apprendimento.</b></p><div class="tagline">// la mano la descrivo io</div></div>
+        <div class="colcard n reveal"><h3>Rete su keypoint</h3><p>Una piccola rete riceve la <b>geometria</b> della mano (feature progettate a mano) e impara da sola le regole di decisione.</p><div class="tagline">// feature mie, regole sue</div></div>
+        <div class="colcard c reveal"><h3>CNN</h3><p>Una rete convoluzionale parte dai <b>pixel grezzi</b> e impara sia cosa guardare sia come classificarlo.</p><div class="tagline">// tutto appreso</div></div>
+      </div>
+    </section>
+
+    <!-- ============ 3 · DIVIDER 1 ============ -->
+    <section class="slide divider">
+      <div class="dghost">01</div>
+      <div class="dnum reveal">Sezione 01</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Il Task</h2>
+      <div class="dsub reveal">Cosa riconosciamo, su quali dati e con quale vincolo.</div>
+    </section>
+
+    <!-- ============ 4 · DEFINIZIONE PROBLEMA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Definizione del problema</span></div>
+      <div class="kicker reveal">15 gesti statici della mano</div>
+      <h2 class="reveal">Una posa → un'etichetta</h2>
+      <p class="prose tight reveal">Dato un fotogramma con una mano, il sistema deve assegnarlo a una di <b>15 classi</b> — saluti, conteggi, simboli — più la classe <b>NO GESTURE</b>. Il vincolo che guida ogni scelta progettuale è uno solo: <span class="hl">funzionare in tempo reale</span> sul flusso di una webcam.</p>
+      <div class="cols c3 reveal" style="margin-top:34px">
+        <div class="ph" style="height:300px"><div class="picon">🖐️</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_1.png</div></div>
+        <div class="ph" style="height:300px"><div class="picon">✌️</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_2.png</div></div>
+        <div class="ph" style="height:300px"><div class="picon">👌</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_3.png</div></div>
+      </div>
+      <p class="caption reveal" style="margin-top:20px">Dataset <b>HaGRID</b> · suddiviso in train / validation / test con proporzione 80 / 10 / 10.</p>
+    </section>
+
+    <!-- ============ 4b · IL VOCABOLARIO DEI GESTI ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Il vocabolario completo</span></div>
+      <div class="kicker reveal">15 classi · saluti, conteggi, simboli</div>
+      <h2 class="reveal" style="font-size:66px">I quindici gesti da riconoscere</h2>
+      <div class="cols c3 reveal" style="margin-top:30px">
+        <div class="colcard e" style="padding:30px 30px">
+          <div class="gcat e">Conteggi & dita</div>
+          <ul class="glist">
+            <li><span class="ge">☝️</span><span><b>POINTING UP</b> — <span class="gd">solo l'indice alzato</span></span></li>
+            <li><span class="ge">✌︎</span><span><b>TWO</b> — <span class="gd">indice e medio uniti</span></span></li>
+            <li><span class="ge">🤟</span><span><b>THREE</b> — <span class="gd">indice, medio e anulare</span></span></li>
+            <li><span class="ge">🖖</span><span><b>FOUR</b> — <span class="gd">quattro dita, pollice giù</span></span></li>
+            <li><span class="ge">✌️</span><span><b>VICTORY</b> — <span class="gd">indice e medio divaricati</span></span></li>
+          </ul>
+        </div>
+        <div class="colcard n" style="padding:30px 30px">
+          <div class="gcat n">Reazioni & simboli</div>
+          <ul class="glist">
+            <li><span class="ge">👍</span><span><b>LIKE</b> — <span class="gd">pollice alzato in su</span></span></li>
+            <li><span class="ge">👎</span><span><b>DISLIKE</b> — <span class="gd">pollice rivolto in giù</span></span></li>
+            <li><span class="ge">👌</span><span><b>OK</b> — <span class="gd">pollice e indice a cerchio</span></span></li>
+            <li><span class="ge">🤙</span><span><b>CALL</b> — <span class="gd">pollice e mignolo distesi</span></span></li>
+            <li><span class="ge">🤘</span><span><b>ROCK</b> — <span class="gd">indice e mignolo distesi</span></span></li>
+          </ul>
+        </div>
+        <div class="colcard c" style="padding:30px 30px">
+          <div class="gcat c">Mani & comandi</div>
+          <ul class="glist">
+            <li><span class="ge">✊</span><span><b>FIST</b> — <span class="gd">pugno chiuso</span></span></li>
+            <li><span class="ge">🖐️</span><span><b>OPEN PALM</b> — <span class="gd">mano aperta, dita unite</span></span></li>
+            <li><span class="ge">✋</span><span><b>STOP</b> — <span class="gd">mano aperta, dita larghe</span></span></li>
+            <li><span class="ge">🤫</span><span><b>MUTE</b> — <span class="gd">pizzico pollice-indice</span></span></li>
+            <li><span class="ge">∅</span><span><b>NO GESTURE</b> — <span class="gd">nessun gesto valido</span></span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="caption reveal" style="margin-top:22px">Ogni gesto è una <b>posa statica</b> della mano: la sfida è distinguerli in tempo reale, anche quando le firme di dita si somigliano.</p>
+    </section>
+
+    <!-- ============ 5 · PIPELINE DATI / OUTPUT ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Dalla foto ai numeri</span></div>
+      <div class="kicker reveal">Cosa diamo in pasto ai modelli</div>
+      <h2 class="reveal">La mano diventa <span class="ag">geometria</span></h2>
+      <div class="split vtext" style="margin-top:24px">
+        <div>
+          <p class="prose tight reveal" style="margin-top:18px;font-size:27px">Un rilevatore di mani estrae da ogni immagine <b>21 punti caratteristici</b> con le loro coordinate, più gli <b>angoli di piegamento</b> delle dita: in tutto un vettore di <span class="hlg">73 valori</span> che descrive la posa, non più i pixel.</p>
+          <table class="extable reveal" style="margin-top:18px;font-size:23px">
+            <caption>Esempio (estratto): coordinate relative al polso</caption>
+            <thead><tr><th>punto</th><th>x</th><th>y</th><th>z</th></tr></thead>
+            <tbody>
+              <tr><td>polso</td><td>0.00</td><td>0.00</td><td>0.00</td></tr>
+              <tr><td>punta pollice</td><td>−0.24</td><td>−0.50</td><td>−0.04</td></tr>
+              <tr><td>punta indice</td><td>−0.49</td><td>−0.35</td><td>−0.02</td></tr>
+            </tbody>
+          </table>
+          <p class="exnote reveal">→ 21 punti × 3 coord. + 10 angoli. La CNN invece riceve l'immagine intera.</p>
+        </div>
+        <div class="reveal" style="display:flex;justify-content:center">
+          <!-- HAND LANDMARK SVG -->
+          <svg width="460" height="470" viewBox="0 0 520 540">
+            <defs><style>.bone{stroke:#46C58A;stroke-width:4;fill:none;opacity:.55}.pt{fill:#4C9BF0}.wr{fill:#F2956F}</style></defs>
+            <!-- bones -->
+            <g class="bone">
+              <path d="M260 470 L210 360 L185 270 L170 200"/>
+              <path d="M260 470 L250 330 L245 230 L242 160"/>
+              <path d="M260 470 L290 330 L300 225 L305 150"/>
+              <path d="M260 470 L330 345 L350 250 L362 180"/>
+              <path d="M260 470 L300 410 L355 360 L395 325"/>
+            </g>
+            <!-- joints -->
+            <g class="pt">
+              <circle cx="210" cy="360" r="9"/><circle cx="185" cy="270" r="9"/><circle cx="170" cy="200" r="11"/>
+              <circle cx="250" cy="330" r="9"/><circle cx="245" cy="230" r="9"/><circle cx="242" cy="160" r="11"/>
+              <circle cx="290" cy="330" r="9"/><circle cx="300" cy="225" r="9"/><circle cx="305" cy="150" r="11"/>
+              <circle cx="330" cy="345" r="9"/><circle cx="350" cy="250" r="9"/><circle cx="362" cy="180" r="11"/>
+              <circle cx="300" cy="410" r="9"/><circle cx="355" cy="360" r="9"/><circle cx="395" cy="325" r="11"/>
+            </g>
+            <circle class="wr" cx="260" cy="470" r="15"/>
+            <text x="260" y="512" fill="#8AA0B8" font-family="JetBrains Mono" font-size="20" text-anchor="middle">21 landmark + angoli</text>
+          </svg>
+        </div>
+      </div>
+      <div class="note reveal" style="bottom:48px;padding:20px 36px">
+        <p style="font-size:24px"><span class="ntitle">Formazione dell'immagine</span>Il sensore cattura un solo colore per pixel: il colore pieno è poi <span class="em">ricostruito per interpolazione</span> (demosaicing). La profondità è solo relativa → mano trattata come quasi-piatta (weak perspective), ipotesi valida vista la distanza tipica dalla camera.</p>
+      </div>
+    </section>
+
+    <!-- ============ 6 · PIPELINE DIAGRAM ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>La pipeline completa</span></div>
+      <div class="kicker reveal">Due strade, un confronto</div>
+      <h2 class="reveal">Dal dataset ai tre classificatori</h2>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/00_pipeline.png" alt="Pipeline" style="width:1120px"></div></div>
+      <p class="caption reveal">Euristico e rete su keypoint condividono lo stesso input geometrico; la CNN lavora sui pixel, su un ramo del tutto indipendente.</p>
+    </section>
+
+    <!-- ============ 7 · DIVIDER 2 ============ -->
+    <section class="slide divider">
+      <div class="dghost">02</div>
+      <div class="dnum reveal">Sezione 02</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Le tre<br>implementazioni</h2>
+      <div class="dsub reveal">Come ciascun modello passa dalla mano alla decisione.</div>
+    </section>
+
+    <!-- ============ 8 · EURISTICO — IDEA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>L'idea</span></div>
+      <div class="kicker reveal">Descrivere la mano a parole, in geometria</div>
+      <h2 class="reveal">Ogni dito ha <span class="at">uno stato</span></h2>
+      <div class="split vtext">
+        <div>
+          <p class="prose tight reveal">L'idea è semplice e completamente trasparente: per ogni dito decido se è <b>disteso</b>, <b>piegato</b> oppure <b>incrociato</b>, misurando quanto la punta è lontana dal centro del palmo, normalizzata sulla dimensione della mano. Cinque dita danno una <span class="hlt">"firma" di cinque stati</span> che identifica il gesto.</p>
+          <p class="prose tight reveal" style="margin-top:24px">È visione artificiale classica al 100%: nessun parametro, nessun addestramento, decisioni leggibili una per una.</p>
+        </div>
+        <div class="reveal" style="display:flex;flex-direction:column;align-items:center;gap:26px">
+          <!-- finger-state strip -->
+          <svg width="540" height="250" viewBox="0 0 540 250">
+            <defs><style>.fb{fill:#18243A;stroke:#2a3a52;stroke-width:2}.up{fill:#46C58A}.dn{fill:#5E7088}.fl{fill:#CFDDEC;font-family:JetBrains Mono;font-size:18px;text-anchor:middle}.st{font-family:JetBrains Mono;font-size:18px;text-anchor:middle}</style></defs>
+            <!-- 5 fingers: pollice piegato, indice+medio dritti, anulare+mignolo piegati (VICTORY-ish) -->
+            <g><rect class="fb" x="20" y="120" width="80" height="110" rx="10"/><circle class="dn" cx="60" cy="150" r="16"/><text class="fl" x="60" y="250">pollice</text><text class="st" x="60" y="200" fill="#5E7088">piegato</text></g>
+            <g><rect class="fb" x="120" y="30" width="80" height="200" rx="10"/><circle class="up" cx="160" cy="62" r="16"/><text class="fl" x="160" y="250">indice</text><text class="st" x="160" y="200" fill="#46C58A">disteso</text></g>
+            <g><rect class="fb" x="220" y="30" width="80" height="200" rx="10"/><circle class="up" cx="260" cy="62" r="16"/><text class="fl" x="260" y="250">medio</text><text class="st" x="260" y="200" fill="#46C58A">disteso</text></g>
+            <g><rect class="fb" x="320" y="120" width="80" height="110" rx="10"/><circle class="dn" cx="360" cy="150" r="16"/><text class="fl" x="360" y="250">anulare</text><text class="st" x="360" y="200" fill="#5E7088">piegato</text></g>
+            <g><rect class="fb" x="420" y="120" width="80" height="110" rx="10"/><circle class="dn" cx="460" cy="150" r="16"/><text class="fl" x="460" y="250">mignolo</text><text class="st" x="460" y="200" fill="#5E7088">piegato</text></g>
+          </svg>
+          <div style="font-family:var(--font-mono);font-size:24px;color:var(--fog2)">firma → <b style="color:#fff">[ piegato · disteso · disteso · piegato · piegato ]</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 9 · EURISTICO — REGOLE & PROSPETTIVA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>Regole e prospettiva</span></div>
+      <div class="kicker reveal">Dalla firma al gesto</div>
+      <h2 class="reveal">Dove le regole<br>diventano fragili</h2>
+      <p class="prose tight reveal">La firma delle cinque dita non sempre basta: gesti diversi possono avere le stesse dita distese e si distinguono solo da <b>distanze relative</b> — ad esempio quanto sono divaricate indice e medio, o quanto è chiuso il "pizzico" tra pollice e indice. Ogni distinzione è una <span class="hlt">soglia fissa</span>, scelta a mano.</p>
+      <div class="cols c2 reveal" style="margin-top:30px">
+        <div class="colcard e"><h3>Il caso difficile: il pollice</h3><p>Capire se il pollice è <b>incrociato</b> sul palmo è ambiguo: dipende fortemente dall'angolo di ripresa. Per gestirlo, la mano viene prima <b>"raddrizzata"</b> con una correzione prospettica, riportandola a una vista frontale standard prima di misurare.</p></div>
+        <div class="colcard e"><h3>Il prezzo da pagare</h3><p>Le soglie fisse funzionano sul caso ideale ma <b>si rompono</b> con rotazioni, prospettive insolite o mani diverse da quelle previste. È un sistema rigido: preciso quando le ipotesi reggono, cieco quando saltano.</p></div>
+      </div>
+      <div class="note reveal" style="bottom:60px">
+        <p><span class="ntitle">Trasformata di Hough & Omografia</span>I punti di riferimento si individuano cercando forme circolari note (<span class="em">Trasformata di Hough</span>); da questi si stima la <span class="em">trasformazione prospettica tra due piani</span> che riporta la mano in vista canonica — lo stesso principio della calibrazione geometrica di una camera.</p>
+      </div>
+    </section>
+
+    <!-- ============ 9b · EURISTICO — TABELLA SOGLIE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>Le soglie fisse</span></div>
+      <div class="kicker reveal">Ogni gesto è una firma di dita + una soglia</div>
+      <h2 class="reveal" style="font-size:62px">Le regole, <span class="at">esplicite</span></h2>
+      <table class="summary compact reveal" style="margin-top:22px">
+        <thead><tr><th class="e">Gesto</th><th class="e">Firma dita · P I M A Mi</th><th class="e">Soglia / condizione chiave</th></tr></thead>
+        <tbody>
+          <tr><td>FIST ✊</td><td><span class="sig"><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>tutte e cinque le dita piegate</td></tr>
+          <tr><td>POINTING UP ☝️</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>solo l'indice disteso</td></tr>
+          <tr><td>TWO ✌︎</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i></span></td><td>div. indice↔medio / palmo <b>≤ 0.6</b></td></tr>
+          <tr><td>VICTORY ✌️</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i></span></td><td>div. indice↔medio / palmo <b>&gt; 0.6</b></td></tr>
+          <tr><td>THREE 🤟</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i></span></td><td>indice + medio + anulare distesi</td></tr>
+          <tr><td>FOUR 🖖</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i></span></td><td>quattro dita distese, pollice piegato</td></tr>
+          <tr><td>OPEN PALM 🖐️</td><td><span class="sig"><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i></span></td><td>apertura indice↔mignolo / palmo <b>≤ 1.3</b></td></tr>
+          <tr><td>STOP ✋</td><td><span class="sig"><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i></span></td><td>apertura indice↔mignolo / palmo <b>&gt; 1.3</b></td></tr>
+          <tr><td>LIKE 👍</td><td><span class="sig"><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>punta pollice <b>sopra</b> la nocca (y₄ &lt; y₂)</td></tr>
+          <tr><td>DISLIKE 👎</td><td><span class="sig"><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>punta pollice <b>sotto</b> la nocca (y₄ ≥ y₂)</td></tr>
+          <tr><td>CALL 🤙</td><td><span class="sig"><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="d">●</i></span></td><td>pollice + mignolo distesi, resto piegato</td></tr>
+          <tr><td>ROCK 🤘</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="d">●</i></span></td><td>indice + mignolo distesi, resto piegato</td></tr>
+          <tr><td>OK 👌</td><td><span class="sig" style="letter-spacing:0">pizzico</span></td><td>pizzico pollice↔indice / palmo <b>&lt; 0.35</b> · medio+anulare distesi</td></tr>
+          <tr><td>MUTE 🤫</td><td><span class="sig" style="letter-spacing:0">pizzico</span></td><td>pizzico pollice↔indice / palmo <b>&lt; 0.35</b> · medio/anulare piegati</td></tr>
+          <tr><td>NO GESTURE</td><td><span class="sig" style="letter-spacing:0">—</span></td><td>nessuna regola soddisfatta (fallback)</td></tr>
+        </tbody>
+      </table>
+      <p class="caption reveal" style="margin-top:18px;font-size:21px">Firma: <span style="color:var(--green)">● disteso</span> · <span style="color:var(--fog3)">● piegato</span> — dito disteso se distanza punta→palmo (normalizzata) <b>&gt; 0.6</b> · pollice <span style="color:var(--terra)">incrociato</span> se l'angolo in vista raddrizzata <b>&lt; 0.8</b>. Numeri tarati a mano: leggibili, ma ciechi appena cambia prospettiva.</p>
+    </section>
+
+    <!-- ============ 10 · NN ARCHITETTURA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--green)"><span class="dot">●</span> MODELLO 2 · RETE SU KEYPOINT</span><span>Architettura</span></div>
+      <div class="kicker reveal">Una rete piccola, su feature pulite</div>
+      <h2 class="reveal">Geometria → <span class="ag">rete</span> → gesto</h2>
+      <div class="split vtext">
+        <div>
+          <p class="prose tight reveal">Il vettore di 73 numeri entra in una rete densa con tre strati nascosti da 50 neuroni e un'uscita su 15 classi. Non vede pixel: ragiona solo sulla <span class="hlg">forma della mano</span>. Proprio perché l'input è già compatto e informativo, la rete può restare <b>minuscola</b>.</p>
+          <div class="stats reveal" style="margin-top:34px">
+            <div class="stat n"><div class="v">9.565</div><div class="l">parametri</div></div>
+            <div class="stat n"><div class="v">0.04<span style="font-size:34px"> MB</span></div><div class="l">peso su disco</div></div>
+            <div class="stat n"><div class="v">73→15</div><div class="l">in → out</div></div>
+          </div>
+          <p class="exnote reveal" style="margin-top:26px">Addestrata finché la rete migliora sui dati di validazione, fermandosi quando smette di farlo (per non sovra-adattarsi) e tenendo i pesi migliori.</p>
+        </div>
+        <div class="reveal" style="display:flex;justify-content:center">
+          <!-- NN architecture SVG -->
+          <svg width="560" height="430" viewBox="0 0 560 430">
+            <defs><style>.lk{stroke:#46C58A;stroke-width:1;opacity:.18}.nd{fill:#18243A;stroke:#46C58A;stroke-width:2}.lbl{fill:#8AA0B8;font-family:JetBrains Mono;font-size:19px;text-anchor:middle}.cnt{fill:#fff;font-family:JetBrains Mono;font-size:22px;font-weight:700;text-anchor:middle}</style></defs>
+            <!-- links (sample) -->
+            <g class="lk">
+              <line x1="70" y1="90" x2="190" y2="80"/><line x1="70" y1="90" x2="190" y2="160"/><line x1="70" y1="90" x2="190" y2="240"/>
+              <line x1="70" y1="180" x2="190" y2="80"/><line x1="70" y1="180" x2="190" y2="240"/><line x1="70" y1="270" x2="190" y2="160"/>
+              <line x1="190" y1="80" x2="310" y2="120"/><line x1="190" y1="160" x2="310" y2="200"/><line x1="190" y1="240" x2="310" y2="120"/>
+              <line x1="310" y1="120" x2="430" y2="160"/><line x1="310" y1="200" x2="430" y2="160"/><line x1="310" y1="120" x2="430" y2="240"/>
+              <line x1="430" y1="160" x2="500" y2="150"/><line x1="430" y1="240" x2="500" y2="210"/>
+            </g>
+            <!-- input -->
+            <g class="nd"><circle cx="70" cy="90" r="15"/></g><g class="nd"><circle cx="70" cy="180" r="15"/></g><g class="nd"><circle cx="70" cy="270" r="15"/></g>
+            <text x="70" y="330" class="cnt">73</text><text x="70" y="356" class="lbl">input</text>
+            <!-- hidden 1 -->
+            <g class="nd"><circle cx="190" cy="80" r="15"/></g><g class="nd"><circle cx="190" cy="160" r="15"/></g><g class="nd"><circle cx="190" cy="240" r="15"/></g>
+            <text x="190" y="330" class="cnt">50</text>
+            <!-- hidden 2 -->
+            <g class="nd"><circle cx="310" cy="120" r="15"/></g><g class="nd"><circle cx="310" cy="200" r="15"/></g>
+            <text x="310" y="330" class="cnt">50</text>
+            <!-- hidden 3 -->
+            <g class="nd"><circle cx="430" cy="160" r="15"/></g><g class="nd"><circle cx="430" cy="240" r="15"/></g>
+            <text x="430" y="330" class="cnt">50</text>
+            <!-- output -->
+            <g class="nd" style="stroke:#4C9BF0"><circle cx="510" cy="150" r="15"/></g><g class="nd" style="stroke:#4C9BF0"><circle cx="510" cy="210" r="15"/></g>
+            <text x="510" y="330" class="cnt" fill="#4C9BF0">15</text><text x="510" y="356" class="lbl">classi</text>
+            <text x="280" y="400" class="lbl">3 strati nascosti · attivazioni ReLU</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 11 · NN — PERCHÉ LE FEATURE SONO BUONE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--green)"><span class="dot">●</span> MODELLO 2 · RETE SU KEYPOINT</span><span>Feature invarianti</span></div>
+      <div class="kicker reveal">Il segreto è nell'input, non nella rete</div>
+      <h2 class="reveal">Feature che <span class="ag">non si lasciano ingannare</span></h2>
+      <p class="prose tight reveal">La forza di questo modello è che le feature sono costruite per essere <b>invarianti</b> alle cose che non contano: dove si trova la mano, quanto è grande, come è ruotata. La rete riceve quindi una descrizione stabile dello stesso gesto, da qualunque angolazione.</p>
+      <div class="cols c2 reveal" style="margin-top:30px">
+        <div class="colcard n"><h3>Coordinate relative al polso</h3><p>Misurando tutto rispetto al polso e normalizzando sulla dimensione della mano, il gesto resta identico se la mano si <b>sposta</b> nell'inquadratura o è più vicina/lontana dalla camera.</p></div>
+        <div class="colcard n"><h3>Angoli tra le articolazioni</h3><p>Gli angoli di piegamento delle dita non cambiano se ruoto la mano: catturano la <b>posa intrinseca</b>, indipendente dall'orientamento.</p></div>
+      </div>
+      <div class="note reveal" style="bottom:64px">
+        <p><span class="ntitle">Descrittore SIFT</span>Stessa filosofia dei descrittori classici della visione: <span class="em">normalizzare posizione, scala e orientamento</span> per una rappresentazione robusta. Qui però le feature le progetta l'uomo sulla fisica della mano, invece di estrarle automaticamente dall'immagine.</p>
+      </div>
+    </section>
+
+    <!-- ============ 12 · CNN ARCHITETTURA + PERCHÉ FINE-TUNING ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--blue)"><span class="dot" style="color:var(--blue)">●</span> MODELLO 3 · CNN</span><span>Architettura & scelta progettuale</span></div>
+      <div class="kicker reveal">Imparare dai pixel, senza ripartire da zero</div>
+      <h2 class="reveal">Una rete già esperta,<br><span class="ac">ri-specializzata</span></h2>
+      <div class="split vtext">
+        <div>
+          <p class="prose tight reveal">La CNN lavora direttamente sull'immagine e impara da sé quali dettagli osservare. Si parte da una rete <b>già addestrata su milioni di immagini</b> e la si ri-addestra interamente sul nostro problema (fine-tuning).</p>
+          <p class="prose tight reveal" style="margin-top:24px"><b>Perché non da zero?</b> Addestrare una rete profonda da capo richiederebbe enormi quantità di dati e tempo di calcolo. Riusare conoscenze visive di base già pronte — bordi, texture, forme — taglia drasticamente il <span class="hl">costo di training</span> e migliora l'accuratezza.</p>
+        </div>
+        <div class="reveal">
+          <div class="colcard c"><h3>In breve</h3>
+            <p style="margin-bottom:18px"><b>MobileNetV3-Small</b> — architettura leggera pensata per dispositivi mobili.</p>
+            <div class="stats" style="gap:34px;margin-top:8px">
+              <div class="stat c"><div class="v">~1,5<span style="font-size:34px">M</span></div><div class="l">parametri</div></div>
+              <div class="stat c"><div class="v">5,98<span style="font-size:34px"> MB</span></div><div class="l">peso su disco</div></div>
+            </div>
+            <p style="margin-top:22px">Ingresso a 224×224 pixel · ottimizzazione con riduzione automatica del passo di apprendimento e arresto anticipato.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 13 · CNN — AUGMENTATION & COSA IMPARA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--blue)"><span class="dot" style="color:var(--blue)">●</span> MODELLO 3 · CNN</span><span>Robustezza & feature apprese</span></div>
+      <div class="kicker reveal">Allenarsi al caos del mondo reale</div>
+      <h2 class="reveal">Cosa imparano i filtri</h2>
+      <p class="prose tight reveal">Per non memorizzare le foto ma <b>generalizzare</b>, durante l'addestramento ogni immagine viene perturbata: ribaltata, ruotata di poco, traslata, con colori e luminosità alterati. La rete impara così a riconoscere il gesto in condizioni sempre diverse.</p>
+      <div class="note reveal" style="bottom:auto;position:relative;margin-top:40px;border-radius:14px;border-left:6px solid var(--blue)">
+        <p><span class="ntitle">Edge detection & Scale-space</span>I primi strati imparano da soli a reagire a <span class="em">bordi e contrasti</span> — ciò che i rilevatori di bordo classici calcolano a mano. Gli strati successivi combinano questi segnali in angoli, poi in parti della mano, infine nel gesto: una <span class="em">gerarchia dal semplice al complesso</span>, equivalente <b>appreso</b> dell'analisi multi-scala classica.</p>
+      </div>
+      <div class="cols c3 reveal" style="margin-top:36px">
+        <div class="colcard c" style="padding:24px 28px"><h3 style="font-size:28px">Strati iniziali</h3><p>bordi, contrasti, texture</p></div>
+        <div class="colcard c" style="padding:24px 28px"><h3 style="font-size:28px">Strati intermedi</h3><p>angoli, curve, parti di dito</p></div>
+        <div class="colcard c" style="padding:24px 28px"><h3 style="font-size:28px">Strati profondi</h3><p>configurazione → gesto</p></div>
+      </div>
+    </section>
+
+    <!-- ============ 14 · DIVIDER 3 ============ -->
+    <section class="slide divider">
+      <div class="dghost">03</div>
+      <div class="dnum reveal">Sezione 03</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Risultati —<br>Prestazioni</h2>
+      <div class="dsub reveal">Confronto leale: stessi campioni, mano effettivamente rilevata.</div>
+    </section>
+
+    <!-- ============ 15 · ACCURATEZZA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Accuratezza complessiva</span></div>
+      <div class="kicker reveal">Il primo verdetto</div>
+      <h2 class="reveal">CNN <span class="ac">94.67%</span> · rete 90.82% · euristico 57.61%</h2>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/01_accuracy.png" alt="Accuratezza" style="width:720px"></div></div>
+      <p class="caption reveal">Il salto dalla rete alla CNN è <b>piccolo</b>; quello verso l'euristico è <b>enorme</b>. Imparare dai dati paga — molto.</p>
+    </section>
+
+    <!-- ============ 16 · MATRICI CONFUSIONE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Matrici di confusione</span></div>
+      <div class="kicker reveal">Dove finiscono gli errori</div>
+      <h2 class="reveal">Quanto è pulita la diagonale</h2>
+      <div class="cardrow reveal">
+        <figure><div class="card"><img src="assets/cm_heur.png" alt="CM Euristico" style="width:470px"></div><figcaption style="color:var(--terra)">Euristico</figcaption></figure>
+        <figure><div class="card"><img src="assets/cm_nn.png" alt="CM rete" style="width:470px"></div><figcaption style="color:var(--green)">Rete su keypoint</figcaption></figure>
+        <figure><div class="card"><img src="assets/cm_cnn.png" alt="CM CNN" style="width:470px"></div><figcaption style="color:var(--blue)">CNN</figcaption></figure>
+      </div>
+      <p class="caption reveal">La CNN concentra quasi tutto sulla diagonale; l'euristico disperde interi gesti su classi sbagliate.</p>
+    </section>
+
+    <!-- ============ 17 · F1 PER CLASSE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>F1-score per classe</span></div>
+      <div class="kicker reveal">Il dettaglio gesto per gesto</div>
+      <h2 class="reveal">Chi vince dove</h2>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/02_f1.png" alt="F1 per classe" style="width:1340px"></div></div>
+      <p class="caption reveal">L'euristico crolla su alcuni gesti aperti (mano e stop quasi a zero) ma regge su altri; la <b>CNN</b> è la più equilibrata su tutte le classi.</p>
+    </section>
+
+    <!-- ============ 18 · CURVE TRAINING ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Curve di addestramento</span></div>
+      <div class="kicker reveal">Come hanno imparato</div>
+      <h2 class="reveal">Convergenza e arresto</h2>
+      <div class="cardrow reveal">
+        <figure><div class="card"><img src="assets/hist_nn.png" alt="History rete" style="width:760px"></div><figcaption style="color:var(--green)">Rete su keypoint</figcaption></figure>
+        <figure><div class="card"><img src="assets/hist_cnn.png" alt="History CNN" style="width:760px"></div><figcaption style="color:var(--blue)">CNN</figcaption></figure>
+      </div>
+      <p class="caption reveal">Entrambe si fermano quando la validazione smette di migliorare; nella CNN si vedono i gradini dovuti alla riduzione automatica del passo di apprendimento.</p>
+    </section>
+
+    <!-- ============ 19 · DIVIDER 4 ============ -->
+    <section class="slide divider">
+      <div class="dghost">04</div>
+      <div class="dnum reveal">Sezione 04</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Analisi<br>statistica</h2>
+      <div class="dsub reveal">Le differenze sono reali, o frutto del caso?</div>
+    </section>
+
+    <!-- ============ 20 · STRATEGIA STATISTICA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 04 · STATISTICA</span><span>La strategia</span></div>
+      <div class="kicker reveal">Dati appaiati, esito giusto / sbagliato</div>
+      <h2 class="reveal" style="font-size:66px">Due passi, non una media</h2>
+      <p class="prose tight reveal">Confrontare accuratezze <b>medie</b> (F-test / ANOVA) qui sarebbe scorretto: i tre modelli vedono <b>gli stessi campioni</b> e l'esito è binario, non una distribuzione continua. Servono test per dati appaiati, applicati in due passi.</p>
+      <div class="cols c2 reveal" style="margin-top:34px">
+        <!-- ① Cochran -->
+        <div class="colcard" style="border-top:4px solid var(--blue)">
+          <h3>① Cochran's Q — <span style="color:var(--blue)">i tre insieme</span></h3>
+          <p>Un unico test su tutti e tre i modelli: <b>esiste almeno una differenza</b>? Generalizza McNemar a più classificatori appaiati. Risponde "sì/no" prima di guardare le coppie.</p>
+          <div class="cite" style="margin-top:16px">Cochran, «Biometrika», 1950</div>
+        </div>
+        <!-- ② McNemar -->
+        <div class="colcard" style="border-top:4px solid var(--green)">
+          <h3>② McNemar — <span style="color:var(--green)">coppia per coppia</span></h3>
+          <p>Acclarata la differenza, si individua <b>quali coppie</b> differiscono. Guarda solo i <b>disaccordi</b>: chi indovina quando l'altro sbaglia.</p>
+          <div class="formula" style="font-size:38px;margin-top:14px">χ² =
+            <span class="frac"><span class="num">( | b − c | − 1 )²</span><span class="den">b + c</span></span>
+          </div>
+          <div class="cite" style="margin-top:10px">McNemar, «Psychometrika», 1947 · −1 = correzione di continuità</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 21 · RISULTATI TEST ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 04 · STATISTICA</span><span>Esito dei test</span></div>
+      <div class="kicker reveal">Differenze reali, non rumore</div>
+      <h2 class="reveal" style="font-size:66px">Il verdetto in due passi</h2>
+      <div class="split" style="margin-top:30px">
+        <div>
+          <div class="colcard" style="border-top:4px solid var(--blue)">
+            <h3>① Cochran's Q</h3>
+            <div class="stats" style="gap:40px;margin-top:6px">
+              <div class="stat c"><div class="v">22.015</div><div class="l">statistica Q (df = 2)</div></div>
+              <div class="stat c"><div class="v">≈ 0</div><div class="l">p-value</div></div>
+            </div>
+            <p class="reveal" style="margin-top:18px;font-size:25px;color:var(--fog2)">I tre modelli <b>non</b> sono equivalenti: almeno uno è diverso. Su 39.765 campioni con mano rilevata.</p>
+          </div>
+          <p class="caption reveal" style="margin-top:24px;text-align:left">② Le coppie poi confermano l'ordine: ogni p-value è praticamente nullo → <b>CNN &gt; rete &gt; euristico</b> è solido.</p>
+        </div>
+        <figure class="reveal">
+          <div class="card"><img src="assets/03_mcnemar.png" alt="McNemar" style="width:760px"></div>
+          <figcaption style="color:var(--green);font-family:var(--font-mono);font-size:23px;text-align:center;margin-top:14px">② McNemar — confronti a coppie</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ 22 · TRADE-OFF ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 04 · STATISTICA</span><span>Accuratezza vs velocità</span></div>
+      <div class="kicker reveal">Non esiste il modello migliore in assoluto</div>
+      <h2 class="reveal">Il miglior <span class="ag">compromesso</span></h2>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/05_tradeoff.png" alt="Trade-off" style="width:820px"></div></div>
+      <p class="caption reveal">La rete su keypoint sta nell'angolo giusto: quasi accurata come la CNN, ma molto più veloce e leggera — ideale per il <b>tempo reale</b>.</p>
+    </section>
+
+    <!-- ============ 23 · DIVIDER 5 ============ -->
+    <section class="slide divider">
+      <div class="dghost">05</div>
+      <div class="dnum reveal">Sezione 05</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Analisi temporale<br>e spaziale</h2>
+      <div class="dsub reveal">Quanto costano in tempo, memoria e robustezza.</div>
+    </section>
+
+    <!-- ============ 24 · TEMPORALE + FOOTPRINT ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 05 · TEMPO &amp; SPAZIO</span><span>Latenza & memoria</span></div>
+      <div class="kicker reveal">Un risultato controintuitivo</div>
+      <h2 class="reveal">Il "senza parametri" è il <span class="at">più lento</span></h2>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/04_efficiency.png" alt="Efficienza" style="width:1320px"></div></div>
+      <p class="caption reveal">L'euristico (8.87 ms) paga le pesanti operazioni geometriche su CPU; la rete su keypoint (0.27 ms) riduce tutto ad algebra lineare; la CNN (4.48 ms) resta competitiva sfruttando la GPU.</p>
+    </section>
+
+    <!-- ============ 25 · SPAZIALE (PERFETTA — NON TOCCARE) ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 05 · TEMPO &amp; SPAZIO</span><span>Robustezza & dipendenza dall'immagine</span></div>
+      <div class="kicker reveal">Quando MediaPipe fallisce</div>
+      <h2 class="reveal" style="font-size:72px">Analisi spaziale</h2>
+      <div class="split">
+        <ul class="points">
+          <li class="b2 reveal">NN ed Euristico <b>dipendono</b> dai landmark MediaPipe</li>
+          <li class="b1 reveal">Su <b>~4.443 immagini</b> MediaPipe fallisce (occlusioni, blur, angoli estremi)<small>quei due modelli non possono nemmeno tentare la classificazione.</small></li>
+          <li class="b3 reveal">La <b>CNN</b> legge i pixel grezzi → le classifica comunque<small>support test: CNN 44.207 vs NN 39.764.</small></li>
+          <li class="b3 reveal">Memoria: Euristico <b>0 MB</b> · NN <b>0.04 MB</b> · CNN <b>5.98 MB</b></li>
+        </ul>
+        <div class="card reveal"><img src="assets/04_efficiency.png" alt="Efficienza" style="width:720px"></div>
+      </div>
+      <div class="note reveal" style="bottom:40px">
+        <p>MediaPipe fallisce su immagini degradate (rumore, motion blur). Filtri di smoothing (<b>gaussiano / mediano</b>) come pre-processing potrebbero recuperarle. La CNN è intrinsecamente più robusta perché apprende feature tolleranti al degrado.</p>
+      </div>
+    </section>
+
+    <!-- ============ 26 · DIVIDER DEMO ============ -->
+    <section class="slide divider">
+      <div class="dghost">▶</div>
+      <div class="dnum reveal">Demo</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Dal vivo</h2>
+      <div class="dsub reveal">I tre modelli in azione sul flusso della webcam.</div>
+    </section>
+
+    <!-- ============ 27 · DEMO PLACEHOLDERS ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> DEMO</span><span>Riconoscimento in tempo reale</span></div>
+      <div class="kicker reveal">Stesso gesto, tre cervelli diversi</div>
+      <h2 class="reveal">Guardiamoli lavorare</h2>
+      <div class="cols c3 reveal" style="margin-top:40px">
+        <figure>
+          <div class="ph" style="height:480px"><div class="picon">🎬</div><div class="plabel">GIF · Euristico</div><div class="ppath">assets/demo_euristico.gif</div></div>
+          <figcaption style="color:var(--terra);font-family:var(--font-mono);font-weight:700;font-size:24px;text-align:center;margin-top:14px">Euristico</figcaption>
+        </figure>
+        <figure>
+          <div class="ph" style="height:480px"><div class="picon">🎬</div><div class="plabel">GIF · Rete su keypoint</div><div class="ppath">assets/demo_nn.gif</div></div>
+          <figcaption style="color:var(--green);font-family:var(--font-mono);font-weight:700;font-size:24px;text-align:center;margin-top:14px">Rete su keypoint</figcaption>
+        </figure>
+        <figure>
+          <div class="ph" style="height:480px"><div class="picon">🎬</div><div class="plabel">GIF · CNN</div><div class="ppath">assets/demo_cnn.gif</div></div>
+          <figcaption style="color:var(--blue);font-family:var(--font-mono);font-weight:700;font-size:24px;text-align:center;margin-top:14px">CNN</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ 28 · DIVIDER 6 ============ -->
+    <section class="slide divider">
+      <div class="dghost">06</div>
+      <div class="dnum reveal">Sezione 06</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Sintesi</h2>
+      <div class="dsub reveal">Cosa scegliere, e cosa ci dice il confronto.</div>
+    </section>
+
+    <!-- ============ 29 · TABELLA RIASSUNTIVA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 06 · SINTESI</span><span>Tabella riassuntiva</span></div>
+      <div class="kicker reveal">I tre paradigmi a colpo d'occhio</div>
+      <h2 class="reveal" style="font-size:70px">Tre modelli, tre compromessi</h2>
+      <table class="summary reveal">
+        <thead><tr><th class="lbl"></th><th class="e">Euristico</th><th class="n">Rete su keypoint</th><th class="c">CNN</th></tr></thead>
+        <tbody>
+          <tr><td>Paradigma</td><td>Regole geometriche</td><td>Feature a mano + rete</td><td>Feature apprese</td></tr>
+          <tr><td>Parametri</td><td>0</td><td>9.565</td><td>~1,5 M</td></tr>
+          <tr><td>Peso</td><td><b>0 MB</b></td><td><b>0.04 MB</b></td><td>5.98 MB</td></tr>
+          <tr><td>Latenza</td><td>8.87 ms</td><td class="win">0.27 ms</td><td>4.48 ms</td></tr>
+          <tr><td>Accuratezza</td><td>57.6%</td><td>90.8%</td><td class="win">94.7%</td></tr>
+          <tr><td>Dipende dal rilevatore di mani</td><td>Sì</td><td>Sì</td><td class="win">No</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============ 30 · CONCLUSIONI ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 06 · SINTESI</span><span>Conclusioni</span></div>
+      <div class="kicker reveal">Cosa ci portiamo a casa</div>
+      <h2 class="reveal">Imparare paga,<br>ma la geometria <span class="ag">resiste</span></h2>
+      <p class="prose reveal">Il passaggio dalle feature progettate a mano a quelle apprese migliora nettamente le prestazioni — ma le feature geometriche restano sorprendentemente competitive ed efficientissime.</p>
+      <div class="cols c3 reveal" style="margin-top:38px">
+        <div class="colcard n"><h3>Rete su keypoint</h3><p>Il <b>miglior compromesso</b> per il tempo reale: un ordine di grandezza più veloce e ~150× più leggera della CNN, con accuratezza vicina.</p></div>
+        <div class="colcard c"><h3>CNN</h3><p>La <b>più accurata e robusta</b>: unica indipendente dal rilevatore di mani, al prezzo di più memoria e di una GPU.</p></div>
+        <div class="colcard e"><h3>Euristico</h3><p>Totalmente <b>interpretabile</b> e a costo zero di training, ma fragile e — a sorpresa — il più lento.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ 31 · SVILUPPI FUTURI ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 06 · SINTESI</span><span>Sviluppi futuri</span></div>
+      <div class="kicker reveal">Dove andare da qui</div>
+      <h2 class="reveal">Sviluppi futuri</h2>
+      <div class="cols c2 reveal" style="margin-top:40px">
+        <div class="colcard" style="border-top:4px solid var(--blue)"><h3>Recuperare i fallimenti</h3><p>Filtri di riduzione del rumore prima del rilevatore di mani, per salvare le immagini degradate oggi perse.</p></div>
+        <div class="colcard" style="border-top:4px solid var(--green)"><h3>CNN più leggera</h3><p>Compressione e ottimizzazione del modello per il deployment su dispositivi a basso consumo.</p></div>
+        <div class="colcard" style="border-top:4px solid var(--terra)"><h3>Modello ibrido</h3><p>Usare la veloce rete su keypoint come default e ricadere sulla CNN solo quando il rilevatore di mani fallisce: velocità e robustezza insieme.</p></div>
+        <div class="colcard" style="border-top:4px solid var(--fog3)"><h3>Profondità reale</h3><p>Calibrare la camera per passare da mano quasi-piatta a una stima 3D completa della posa.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ 32 · GRAZIE ============ -->
+    <section class="slide closing">
+      <div class="ctag reveal">Hand Gesture Recognition</div>
+      <h1 class="reveal">Grazie per<br>l'<span>attenzione</span></h1>
+      <div class="cfoot reveal"><b>Vincenzo Marotta</b> · <span>N97000512</span> · Progetto di Computer Vision</div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ DECK CHROME ============ -->
+<div class="progress" id="progress"></div>
+<div class="pagecount" id="pagecount"><b>01</b> / 33</div>
+<div class="hint">← → · Spazio · scroll · E = modifica</div>
+<div class="edit-hotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Modalità modifica (E)">✏️</button>
+<div class="edit-banner">Modalità modifica — clicca un testo · Ctrl+S salva · E esci</div>
+
+<script>
+/* ===== SLIDE CONTROLLER ===== */
+class SlidePresentation{
+  constructor(){
+    this.slides=[...document.querySelectorAll('.slide')];
+    this.i=0; this.stage=document.getElementById('deckStage');
+    this.progress=document.getElementById('progress'); this.pagecount=document.getElementById('pagecount');
+    this.scrollLock=false;
+    this.fit(); addEventListener('resize',()=>this.fit());
+    this.keys(); this.touch(); this.wheel(); this.show(0);
+  }
+  fit(){ const f=Math.min(innerWidth/1920,innerHeight/1080);
+    this.stage.style.transform=`translate(${(innerWidth-1920*f)/2}px,${(innerHeight-1080*f)/2}px) scale(${f})`; }
+  show(n){ this.i=Math.max(0,Math.min(n,this.slides.length-1));
+    this.slides.forEach((s,k)=>{ s.classList.toggle('active',k===this.i); s.classList.toggle('visible',k===this.i); });
+    this.pagecount.innerHTML=`<b>${String(this.i+1).padStart(2,'0')}</b> / ${String(this.slides.length).padStart(2,'0')}`;
+    this.progress.style.width=((this.i+1)/this.slides.length*100)+'%'; }
+  next(){ this.show(this.i+1); } prev(){ this.show(this.i-1); }
+  keys(){ addEventListener('keydown',e=>{
+    if(e.target.getAttribute&&e.target.getAttribute('contenteditable'))return;
+    if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)){e.preventDefault();this.next();}
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();this.prev();}
+    else if(e.key==='Home')this.show(0); else if(e.key==='End')this.show(this.slides.length-1); }); }
+  touch(){ let x0=null;
+    addEventListener('touchstart',e=>{x0=e.touches[0].clientX;},{passive:true});
+    addEventListener('touchend',e=>{ if(x0===null)return;
+      const dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>60){dx<0?this.next():this.prev();} x0=null; },{passive:true}); }
+  wheel(){ addEventListener('wheel',e=>{
+    if(document.body.classList.contains('editing'))return; if(this.scrollLock)return;
+    if(Math.abs(e.deltaY)<20)return; this.scrollLock=true; e.deltaY>0?this.next():this.prev();
+    setTimeout(()=>this.scrollLock=false,700); },{passive:true}); }
+}
+/* ===== INLINE EDITOR ===== */
+class InlineEditor{
+  constructor(){ this.isActive=false;
+    this.targets='h1,h2,h3,p,li,figcaption,td,th,.kicker,.t-sub,.t-tag,.caption,.dnum,.dsub,.plabel,.cite,.tagline,.exnote';
+    this.toggle=document.getElementById('editToggle'); this.wireUI();
+    addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&this.isActive){e.preventDefault();this.save();} }); }
+  toggleEditMode(){ this.isActive=!this.isActive;
+    document.body.classList.toggle('editing',this.isActive); this.toggle.classList.toggle('active',this.isActive);
+    document.querySelectorAll(this.targets).forEach(el=>{ this.isActive?el.setAttribute('contenteditable','true'):el.removeAttribute('contenteditable'); }); }
+  save(){ const html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+    a.download='Hand_Gesture_Recognition.html'; a.click(); URL.revokeObjectURL(a.href); }
+  wireUI(){ const hot=document.querySelector('.edit-hotzone'),btn=this.toggle; let t=null;
+    btn.addEventListener('click',()=>this.toggleEditMode()); hot.addEventListener('click',()=>this.toggleEditMode());
+    hot.addEventListener('mouseenter',()=>{clearTimeout(t);btn.classList.add('show');});
+    hot.addEventListener('mouseleave',()=>{t=setTimeout(()=>{if(!this.isActive)btn.classList.remove('show');},400);});
+    btn.addEventListener('mouseenter',()=>clearTimeout(t));
+    btn.addEventListener('mouseleave',()=>{t=setTimeout(()=>{if(!this.isActive)btn.classList.remove('show');},400);});
+    addEventListener('keydown',e=>{ if((e.key==='e'||e.key==='E')&&!(e.target.getAttribute&&e.target.getAttribute('contenteditable')))this.toggleEditMode(); }); }
+}
+const deck=new SlidePresentation(); window.deck=deck;
+const editor=new InlineEditor();
+</script>
+</body>
+</html>

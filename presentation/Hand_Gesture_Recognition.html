@@ -185,6 +185,26 @@ code{ font-family:var(--font-mono); font-size:.84em; background:var(--ink3); pad
 .cite{ font-family:var(--font-mono); font-size:19px; color:var(--fog3); margin-top:18px; }
 .cite b{ color:var(--fog2); }
 
+/* gesture vocabulary list (all-gestures slide) */
+.gcat{ font-family:var(--font-mono); font-weight:700; font-size:21px; letter-spacing:.14em;
+  text-transform:uppercase; margin-bottom:18px; }
+.gcat.e{ color:var(--terra); } .gcat.n{ color:var(--green); } .gcat.c{ color:var(--blue); }
+.glist{ list-style:none; }
+.glist li{ display:flex; gap:16px; align-items:baseline; font-size:23px; line-height:1.28;
+  color:var(--fog2); margin-bottom:18px; }
+.glist li .ge{ font-size:32px; line-height:1; flex:0 0 46px; text-align:center; }
+.glist li b{ color:#fff; font-family:var(--font-mono); font-size:20px; font-weight:700; }
+.glist li span.gd{ color:var(--fog2); }
+
+/* compact + signature variant of summary table (thresholds slide) */
+.summary.compact th,.summary.compact td{ padding:9px 18px; font-size:22px; }
+.summary.compact td:first-child,.summary.compact th:first-child{ font-size:22px; }
+.sig{ font-family:var(--font-mono); font-size:25px; letter-spacing:.16em; font-style:normal; white-space:nowrap; }
+.sig i{ font-style:normal; }
+.sig .d{ color:var(--green); }   /* disteso */
+.sig .p{ color:var(--fog3); }    /* piegato  */
+.sig .c{ color:var(--terra); }   /* incrociato */
+
 /* ===========================================================
    TITLE SLIDE
    =========================================================== */
@@ -357,15 +377,55 @@ body.editing .edit-banner{ display:block; }
       <p class="caption reveal" style="margin-top:20px">Dataset <b>HaGRID</b> · suddiviso in train / validation / test con proporzione 80 / 10 / 10.</p>
     </section>
 
+    <!-- ============ 4b · IL VOCABOLARIO DEI GESTI ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Il vocabolario completo</span></div>
+      <div class="kicker reveal">15 classi · saluti, conteggi, simboli</div>
+      <h2 class="reveal" style="font-size:66px">I quindici gesti da riconoscere</h2>
+      <div class="cols c3 reveal" style="margin-top:30px">
+        <div class="colcard e" style="padding:30px 30px">
+          <div class="gcat e">Conteggi & dita</div>
+          <ul class="glist">
+            <li><span class="ge">☝️</span><span><b>POINTING UP</b> — <span class="gd">solo l'indice alzato</span></span></li>
+            <li><span class="ge">✌︎</span><span><b>TWO</b> — <span class="gd">indice e medio uniti</span></span></li>
+            <li><span class="ge">🤟</span><span><b>THREE</b> — <span class="gd">indice, medio e anulare</span></span></li>
+            <li><span class="ge">🖖</span><span><b>FOUR</b> — <span class="gd">quattro dita, pollice giù</span></span></li>
+            <li><span class="ge">✌️</span><span><b>VICTORY</b> — <span class="gd">indice e medio divaricati</span></span></li>
+          </ul>
+        </div>
+        <div class="colcard n" style="padding:30px 30px">
+          <div class="gcat n">Reazioni & simboli</div>
+          <ul class="glist">
+            <li><span class="ge">👍</span><span><b>LIKE</b> — <span class="gd">pollice alzato in su</span></span></li>
+            <li><span class="ge">👎</span><span><b>DISLIKE</b> — <span class="gd">pollice rivolto in giù</span></span></li>
+            <li><span class="ge">👌</span><span><b>OK</b> — <span class="gd">pollice e indice a cerchio</span></span></li>
+            <li><span class="ge">🤙</span><span><b>CALL</b> — <span class="gd">pollice e mignolo distesi</span></span></li>
+            <li><span class="ge">🤘</span><span><b>ROCK</b> — <span class="gd">indice e mignolo distesi</span></span></li>
+          </ul>
+        </div>
+        <div class="colcard c" style="padding:30px 30px">
+          <div class="gcat c">Mani & comandi</div>
+          <ul class="glist">
+            <li><span class="ge">✊</span><span><b>FIST</b> — <span class="gd">pugno chiuso</span></span></li>
+            <li><span class="ge">🖐️</span><span><b>OPEN PALM</b> — <span class="gd">mano aperta, dita unite</span></span></li>
+            <li><span class="ge">✋</span><span><b>STOP</b> — <span class="gd">mano aperta, dita larghe</span></span></li>
+            <li><span class="ge">🤫</span><span><b>MUTE</b> — <span class="gd">pizzico pollice-indice</span></span></li>
+            <li><span class="ge">∅</span><span><b>NO GESTURE</b> — <span class="gd">nessun gesto valido</span></span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="caption reveal" style="margin-top:22px">Ogni gesto è una <b>posa statica</b> della mano: la sfida è distinguerli in tempo reale, anche quando le firme di dita si somigliano.</p>
+    </section>
+
     <!-- ============ 5 · PIPELINE DATI / OUTPUT ============ -->
     <section class="slide">
       <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Dalla foto ai numeri</span></div>
       <div class="kicker reveal">Cosa diamo in pasto ai modelli</div>
       <h2 class="reveal">La mano diventa <span class="ag">geometria</span></h2>
-      <div class="split vtext">
+      <div class="split vtext" style="margin-top:24px">
         <div>
-          <p class="prose tight reveal">Un rilevatore di mani estrae da ogni immagine <b>21 punti caratteristici</b> con le loro coordinate, più gli <b>angoli di piegamento</b> delle dita: in tutto un vettore di <span class="hlg">73 valori</span> che descrive la posa, non più i pixel.</p>
-          <table class="extable reveal" style="margin-top:26px">
+          <p class="prose tight reveal" style="margin-top:18px;font-size:27px">Un rilevatore di mani estrae da ogni immagine <b>21 punti caratteristici</b> con le loro coordinate, più gli <b>angoli di piegamento</b> delle dita: in tutto un vettore di <span class="hlg">73 valori</span> che descrive la posa, non più i pixel.</p>
+          <table class="extable reveal" style="margin-top:18px;font-size:23px">
             <caption>Esempio (estratto): coordinate relative al polso</caption>
             <thead><tr><th>punto</th><th>x</th><th>y</th><th>z</th></tr></thead>
             <tbody>
@@ -401,8 +461,8 @@ body.editing .edit-banner{ display:block; }
           </svg>
         </div>
       </div>
-      <div class="note reveal" style="bottom:54px">
-        <p><span class="ntitle">Formazione dell'immagine</span>Il sensore cattura un solo colore per pixel: il colore pieno è poi <span class="em">ricostruito per interpolazione</span> (demosaicing). La profondità è solo relativa → mano trattata come quasi-piatta (weak perspective), ipotesi valida vista la distanza tipica dalla camera.</p>
+      <div class="note reveal" style="bottom:48px;padding:20px 36px">
+        <p style="font-size:24px"><span class="ntitle">Formazione dell'immagine</span>Il sensore cattura un solo colore per pixel: il colore pieno è poi <span class="em">ricostruito per interpolazione</span> (demosaicing). La profondità è solo relativa → mano trattata come quasi-piatta (weak perspective), ipotesi valida vista la distanza tipica dalla camera.</p>
       </div>
     </section>
 
@@ -468,19 +528,29 @@ body.editing .edit-banner{ display:block; }
     <!-- ============ 9b · EURISTICO — TABELLA SOGLIE ============ -->
     <section class="slide">
       <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>Le soglie fisse</span></div>
-      <div class="kicker reveal">Ogni distinzione è un numero scelto a mano</div>
-      <h2 class="reveal">Le regole, <span class="at">esplicite</span></h2>
-      <table class="summary reveal" style="margin-top:40px">
-        <thead><tr><th class="e">Distinzione</th><th class="e">Misura geometrica</th><th class="e">Soglia</th></tr></thead>
+      <div class="kicker reveal">Ogni gesto è una firma di dita + una soglia</div>
+      <h2 class="reveal" style="font-size:62px">Le regole, <span class="at">esplicite</span></h2>
+      <table class="summary compact reveal" style="margin-top:22px">
+        <thead><tr><th class="e">Gesto</th><th class="e">Firma dita · P I M A Mi</th><th class="e">Soglia / condizione chiave</th></tr></thead>
         <tbody>
-          <tr><td>Dito disteso / piegato</td><td>distanza punta → centro palmo (normalizzata)</td><td><b>&gt; 0.6</b></td></tr>
-          <tr><td>STOP / OPEN PALM</td><td>divaricazione indice ↔ mignolo / larghezza palmo</td><td><b>&gt; 1.3</b></td></tr>
-          <tr><td>VICTORY / TWO</td><td>divaricazione indice ↔ medio / larghezza palmo</td><td><b>&gt; 0.6</b></td></tr>
-          <tr><td>OK / MUTE</td><td>"pizzico" pollice ↔ indice (normalizzato)</td><td><b>&lt; 0.35</b></td></tr>
-          <tr><td>Pollice incrociato</td><td>punta del pollice rispetto al palmo (vista raddrizzata)</td><td><b>dentro / fuori</b></td></tr>
+          <tr><td>FIST ✊</td><td><span class="sig"><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>tutte e cinque le dita piegate</td></tr>
+          <tr><td>POINTING UP ☝️</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>solo l'indice disteso</td></tr>
+          <tr><td>TWO ✌︎</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i></span></td><td>div. indice↔medio / palmo <b>≤ 0.6</b></td></tr>
+          <tr><td>VICTORY ✌️</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i></span></td><td>div. indice↔medio / palmo <b>&gt; 0.6</b></td></tr>
+          <tr><td>THREE 🤟</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i></span></td><td>indice + medio + anulare distesi</td></tr>
+          <tr><td>FOUR 🖖</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i></span></td><td>quattro dita distese, pollice piegato</td></tr>
+          <tr><td>OPEN PALM 🖐️</td><td><span class="sig"><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i></span></td><td>apertura indice↔mignolo / palmo <b>≤ 1.3</b></td></tr>
+          <tr><td>STOP ✋</td><td><span class="sig"><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i></span></td><td>apertura indice↔mignolo / palmo <b>&gt; 1.3</b></td></tr>
+          <tr><td>LIKE 👍</td><td><span class="sig"><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>punta pollice <b>sopra</b> la nocca (y₄ &lt; y₂)</td></tr>
+          <tr><td>DISLIKE 👎</td><td><span class="sig"><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>punta pollice <b>sotto</b> la nocca (y₄ ≥ y₂)</td></tr>
+          <tr><td>CALL 🤙</td><td><span class="sig"><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="d">●</i></span></td><td>pollice + mignolo distesi, resto piegato</td></tr>
+          <tr><td>ROCK 🤘</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="d">●</i></span></td><td>indice + mignolo distesi, resto piegato</td></tr>
+          <tr><td>OK 👌</td><td><span class="sig" style="letter-spacing:0">pizzico</span></td><td>pizzico pollice↔indice / palmo <b>&lt; 0.35</b> · medio+anulare distesi</td></tr>
+          <tr><td>MUTE 🤫</td><td><span class="sig" style="letter-spacing:0">pizzico</span></td><td>pizzico pollice↔indice / palmo <b>&lt; 0.35</b> · medio/anulare piegati</td></tr>
+          <tr><td>NO GESTURE</td><td><span class="sig" style="letter-spacing:0">—</span></td><td>nessuna regola soddisfatta (fallback)</td></tr>
         </tbody>
       </table>
-      <p class="caption reveal" style="margin-top:26px">Sono il punto di forza — <b>tutto leggibile</b> — e insieme la debolezza: numeri tarati su una mano ideale, ciechi appena cambia prospettiva.</p>
+      <p class="caption reveal" style="margin-top:18px;font-size:21px">Firma: <span style="color:var(--green)">● disteso</span> · <span style="color:var(--fog3)">● piegato</span> — dito disteso se distanza punta→palmo (normalizzata) <b>&gt; 0.6</b> · pollice <span style="color:var(--terra)">incrociato</span> se l'angolo in vista raddrizzata <b>&lt; 0.8</b>. Numeri tarati a mano: leggibili, ma ciechi appena cambia prospettiva.</p>
     </section>
 
     <!-- ============ 10 · NN ARCHITETTURA ============ -->
