@@ -129,14 +129,14 @@ code{ font-family:var(--font-mono); font-size:.84em; background:var(--ink3); pad
 /* generic column grid */
 .cols{ display:grid; gap:36px; margin-top:44px; }
 .cols.c2{ grid-template-columns:1fr 1fr; } .cols.c3{ grid-template-columns:repeat(3,1fr); }
-.colcard{ background:var(--ink2); border:1px solid var(--line); border-radius:16px; padding:34px 32px; }
+.colcard{ background:var(--ink2); border:1px solid var(--line); border-radius:16px; padding:34px 32px; display:flex; flex-direction:column; }
 .colcard .ico{ width:60px; height:60px; margin-bottom:18px; }
 .colcard h3{ font-family:var(--font-display); font-weight:700; font-size:34px; color:#fff; margin-bottom:12px; }
 .colcard p{ font-size:25px; line-height:1.42; color:var(--fog2); }
 .colcard p b{ color:var(--fog); }
 .colcard.e{ border-top:4px solid var(--terra); } .colcard.n{ border-top:4px solid var(--green); }
 .colcard.c{ border-top:4px solid var(--blue); }
-.tagline{ font-family:var(--font-mono); font-size:21px; letter-spacing:.04em; margin-top:16px; }
+.tagline{ font-family:var(--font-mono); font-size:21px; letter-spacing:.04em; margin-top:auto; padding-top:16px; }
 .colcard.e .tagline{ color:var(--terra); } .colcard.n .tagline{ color:var(--green); } .colcard.c .tagline{ color:var(--blue); }
 
 /* two-column: text | visual */
@@ -189,16 +189,17 @@ code{ font-family:var(--font-mono); font-size:.84em; background:var(--ink3); pad
 .gcat{ font-family:var(--font-mono); font-weight:700; font-size:21px; letter-spacing:.14em;
   text-transform:uppercase; margin-bottom:18px; }
 .gcat.e{ color:var(--terra); } .gcat.n{ color:var(--green); } .gcat.c{ color:var(--blue); }
+.gcat{ font-size:27px; }
 .glist{ list-style:none; }
-.glist li{ display:flex; gap:16px; align-items:baseline; font-size:23px; line-height:1.28;
-  color:var(--fog2); margin-bottom:18px; }
-.glist li .ge{ font-size:32px; line-height:1; flex:0 0 46px; text-align:center; }
-.glist li b{ color:#fff; font-family:var(--font-mono); font-size:20px; font-weight:700; }
+.glist li{ display:flex; gap:18px; align-items:baseline; font-size:29px; line-height:1.34;
+  color:var(--fog2); margin-bottom:24px; }
+.glist li .ge{ font-size:42px; line-height:1; flex:0 0 56px; text-align:center; }
+.glist li b{ color:#fff; font-family:var(--font-mono); font-size:26px; font-weight:700; }
 .glist li span.gd{ color:var(--fog2); }
 
 /* compact + signature variant of summary table (thresholds slide) */
-.summary.compact th,.summary.compact td{ padding:9px 18px; font-size:22px; }
-.summary.compact td:first-child,.summary.compact th:first-child{ font-size:22px; }
+.summary.compact th,.summary.compact td{ padding:4px 15px; font-size:17px; }
+.summary.compact td:first-child,.summary.compact th:first-child{ font-size:17px; }
 .sig{ font-family:var(--font-mono); font-size:25px; letter-spacing:.16em; font-style:normal; white-space:nowrap; }
 .sig i{ font-style:normal; }
 .sig .d{ color:var(--green); }   /* disteso */
@@ -345,16 +346,30 @@ body.editing .edit-banner{ display:block; }
       <div class="t-side">dataset <b>HaGRID</b><br>riconoscimento da<br><b>webcam in tempo reale</b></div>
     </section>
 
-    <!-- ============ 2 · FILO CONDUTTORE ============ -->
+    <!-- ============ 2 · DA DOVE PARTO · IL PAPER ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> INTRO</span><span>Il punto di partenza</span></div>
+      <div class="kicker reveal">Google Research, 2021</div>
+      <h2 class="reveal" style="font-size:58px">«On-device Real-time<br>Hand Gesture Recognition»</h2>
+      <p class="prose tight reveal" style="font-size:28px">Il progetto riproduce un paper di Google. Il lavoro originale propone un sistema di riconoscimento gesti <b>on-device</b> da una singola camera RGB: <b>MediaPipe Hands</b> stima 21 keypoint della mano, poi un classificatore decide il gesto lavorando sulla <b>geometria</b>, non sui pixel. Per restare in tempo reale, la classificazione gira <b>solo quando una mano è tracciata</b>. Gli autori realizzano <b>due</b> classificatori: uno <span class="hlt">euristico</span> e una piccola <span class="hlg">rete neurale</span>.</p>
+      <div class="cols c3 reveal" style="margin-top:28px">
+        <div class="colcard" style="border-top:4px solid var(--fog3)"><h3>Pipeline a keypoint</h3><p>Rilevatore di mani, feature geometriche, classificatore: la decisione avviene solo quando una mano è presente, per ridurre il calcolo.</p></div>
+        <div class="colcard e"><h3>Classificatore euristico</h3><p>Stato discreto di ogni dito, disteso, piegato o incrociato, con regole esplicite su angoli e distanze; nessun addestramento.</p></div>
+        <div class="colcard n"><h3>Rete su keypoint</h3><p>Rete densa compatta, strati da 50 neuroni, sulle feature 3D della posa, con focal loss per le classi sbilanciate.</p></div>
+      </div>
+      <div class="cite reveal" style="margin-top:22px">Sung et al., «On-device Real-time Hand Gesture Recognition», Google Research, arXiv:2111.00038, 2021</div>
+    </section>
+
+    <!-- ============ 2b · FILO CONDUTTORE ============ -->
     <section class="slide">
       <div class="hud reveal"><span><span class="dot">●</span> INTRO</span><span>Il filo conduttore</span></div>
       <div class="kicker reveal">Una domanda, tre risposte</div>
       <h2 class="reveal">Tre modi di riconoscere<br>lo stesso gesto</h2>
-      <p class="prose reveal">Lo stesso problema viene affrontato con tre filosofie diverse, che ripercorrono l'evoluzione storica della visione artificiale: dalle regole <span class="hlt">scritte a mano</span>, alle feature <span class="hlg">progettate dall'uomo</span> ma classificate da una rete, fino alle feature <span class="hl">apprese</span> direttamente dai pixel.</p>
+      <p class="prose reveal">A partire da quel lavoro, affronto lo stesso problema con tre filosofie diverse, che ripercorrono l'evoluzione storica della visione artificiale: dalle regole <span class="hlt">scritte a mano</span>, alle feature <span class="hlg">progettate dall'uomo</span> ma classificate da una rete, fino alle feature <span class="hl">apprese</span> direttamente dai pixel.</p>
       <div class="cols c3">
         <div class="colcard e reveal"><h3>Euristico</h3><p>Regole geometriche esplicite: misuro distanze e angoli della mano e decido con una serie di condizioni. <b>Nessun apprendimento.</b></p><div class="tagline">// la mano la descrivo io</div></div>
-        <div class="colcard n reveal"><h3>Rete su keypoint</h3><p>Una piccola rete riceve la <b>geometria</b> della mano (feature progettate a mano) e impara da sola le regole di decisione.</p><div class="tagline">// feature mie, regole sue</div></div>
-        <div class="colcard c reveal"><h3>CNN</h3><p>Una rete convoluzionale parte dai <b>pixel grezzi</b> e impara sia cosa guardare sia come classificarlo.</p><div class="tagline">// tutto appreso</div></div>
+        <div class="colcard n reveal"><h3>Rete su keypoint</h3><p>Una piccola rete riceve la <b>geometria</b> della mano, feature progettate a mano, e impara da sola le regole di decisione.</p><div class="tagline">// feature mie, regole sue</div></div>
+        <div class="colcard c reveal"><h3>CNN</h3><p>Una rete convoluzionale parte dai <b>pixel grezzi</b> e impara sia cosa guardare sia come classificarlo. <b>La mia aggiunta.</b></p><div class="tagline">// tutto appreso</div></div>
       </div>
     </section>
 
@@ -373,12 +388,11 @@ body.editing .edit-banner{ display:block; }
       <div class="kicker reveal">15 gesti statici della mano</div>
       <h2 class="reveal">Una posa → un'etichetta</h2>
       <p class="prose tight reveal">Dato un fotogramma con una mano, il sistema deve assegnarlo a una di <b>15 classi</b> (saluti, conteggi, simboli) più la classe <b>NO GESTURE</b>. Il vincolo che guida ogni scelta progettuale è uno solo: <span class="hl">funzionare in tempo reale</span> sul flusso di una webcam.</p>
-      <div class="cols c3 reveal" style="margin-top:34px">
-        <div class="ph" style="height:300px"><div class="picon">🖐️</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_1.png</div></div>
-        <div class="ph" style="height:300px"><div class="picon">✌️</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_2.png</div></div>
-        <div class="ph" style="height:300px"><div class="picon">👌</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_3.png</div></div>
+      <div class="cols c3 reveal" style="margin-top:40px">
+        <figure><div class="ph" style="height:320px"><img src="assets/sample_gesti_1.png" alt="POINTING UP"></div><figcaption style="font-family:var(--font-mono);font-weight:700;font-size:25px;color:var(--fog);text-align:center;margin-top:16px">POINTING UP</figcaption></figure>
+        <figure><div class="ph" style="height:320px"><img src="assets/sample_gesti_2.png" alt="MUTE"></div><figcaption style="font-family:var(--font-mono);font-weight:700;font-size:25px;color:var(--fog);text-align:center;margin-top:16px">MUTE</figcaption></figure>
+        <figure><div class="ph" style="height:320px"><img src="assets/sample_gesti_3.png" alt="VICTORY"></div><figcaption style="font-family:var(--font-mono);font-weight:700;font-size:25px;color:var(--fog);text-align:center;margin-top:16px">VICTORY</figcaption></figure>
       </div>
-      <p class="caption reveal" style="margin-top:20px">Dataset <b>HaGRID</b> · suddiviso in train / validation / test con proporzione 80 / 10 / 10.</p>
     </section>
 
     <!-- ============ 4b · IL VOCABOLARIO DEI GESTI ============ -->
@@ -390,35 +404,70 @@ body.editing .edit-banner{ display:block; }
         <div class="colcard e" style="padding:30px 30px">
           <div class="gcat e">Conteggi & dita</div>
           <ul class="glist">
-            <li><span class="ge">☝️</span><span><b>POINTING UP</b> — <span class="gd">solo l'indice alzato</span></span></li>
-            <li><span class="ge">✌️</span><span><b>TWO</b> — <span class="gd">indice e medio uniti</span></span></li>
-            <li><span class="ge">🤟</span><span><b>THREE</b> — <span class="gd">indice, medio e anulare</span></span></li>
-            <li><span class="ge">🖖</span><span><b>FOUR</b> — <span class="gd">quattro dita, pollice giù</span></span></li>
-            <li><span class="ge">✌️</span><span><b>VICTORY</b> — <span class="gd">indice e medio divaricati</span></span></li>
+            <li><span class="ge">☝️</span><span><b>POINTING UP</b>: <span class="gd">solo l'indice alzato</span></span></li>
+            <li><span class="ge">✌️</span><span><b>TWO</b>: <span class="gd">indice e medio uniti</span></span></li>
+            <li><span class="ge">🤟</span><span><b>THREE</b>: <span class="gd">indice, medio e anulare</span></span></li>
+            <li><span class="ge">🖖</span><span><b>FOUR</b>: <span class="gd">quattro dita, pollice giù</span></span></li>
+            <li><span class="ge">✌️</span><span><b>VICTORY</b>: <span class="gd">indice e medio divaricati</span></span></li>
           </ul>
         </div>
         <div class="colcard n" style="padding:30px 30px">
           <div class="gcat n">Reazioni & simboli</div>
           <ul class="glist">
-            <li><span class="ge">👍</span><span><b>LIKE</b> — <span class="gd">pollice alzato in su</span></span></li>
-            <li><span class="ge">👎</span><span><b>DISLIKE</b> — <span class="gd">pollice rivolto in giù</span></span></li>
-            <li><span class="ge">👌</span><span><b>OK</b> — <span class="gd">pollice e indice a cerchio</span></span></li>
-            <li><span class="ge">🤙</span><span><b>CALL</b> — <span class="gd">pollice e mignolo distesi</span></span></li>
-            <li><span class="ge">🤘</span><span><b>ROCK</b> — <span class="gd">indice e mignolo distesi</span></span></li>
+            <li><span class="ge">👍</span><span><b>LIKE</b>: <span class="gd">pollice alzato in su</span></span></li>
+            <li><span class="ge">👎</span><span><b>DISLIKE</b>: <span class="gd">pollice rivolto in giù</span></span></li>
+            <li><span class="ge">👌</span><span><b>OK</b>: <span class="gd">pollice e indice a cerchio</span></span></li>
+            <li><span class="ge">🤙</span><span><b>CALL</b>: <span class="gd">pollice e mignolo distesi</span></span></li>
+            <li><span class="ge">🤘</span><span><b>ROCK</b>: <span class="gd">indice e mignolo distesi</span></span></li>
           </ul>
         </div>
         <div class="colcard c" style="padding:30px 30px">
           <div class="gcat c">Mani & comandi</div>
           <ul class="glist">
-            <li><span class="ge">✊</span><span><b>FIST</b> — <span class="gd">pugno chiuso</span></span></li>
-            <li><span class="ge">🖐️</span><span><b>OPEN PALM</b> — <span class="gd">mano aperta, dita unite</span></span></li>
-            <li><span class="ge">✋</span><span><b>STOP</b> — <span class="gd">mano aperta, dita larghe</span></span></li>
-            <li><span class="ge">🤫</span><span><b>MUTE</b> — <span class="gd">pizzico pollice-indice</span></span></li>
-            <li><span class="ge">∅</span><span><b>NO GESTURE</b> — <span class="gd">nessun gesto valido</span></span></li>
+            <li><span class="ge">✊</span><span><b>FIST</b>: <span class="gd">pugno chiuso</span></span></li>
+            <li><span class="ge">🖐️</span><span><b>OPEN PALM</b>: <span class="gd">mano aperta, dita unite</span></span></li>
+            <li><span class="ge">✋</span><span><b>STOP</b>: <span class="gd">mano aperta, dita larghe</span></span></li>
+            <li><span class="ge">🤫</span><span><b>MUTE</b>: <span class="gd">indice sulle labbra, silenzio</span></span></li>
+            <li><span class="ge">∅</span><span><b>NO GESTURE</b>: <span class="gd">nessun gesto valido</span></span></li>
           </ul>
         </div>
       </div>
       <p class="caption reveal" style="margin-top:22px">Ogni gesto è una <b>posa statica</b> della mano: la sfida è distinguerli in tempo reale, anche quando le firme di dita si somigliano.</p>
+    </section>
+
+    <!-- ============ 4c · PIPELINE DIAGRAM (panoramica) ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>La pipeline completa</span></div>
+      <div class="kicker reveal">Una panoramica, prima dei dettagli</div>
+      <h2 class="reveal">Dal dataset ai tre classificatori</h2>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/00_pipeline.png" alt="Pipeline" style="width:1800px"></div></div>
+      <p class="caption reveal">Euristico e rete su keypoint condividono lo stesso input geometrico. <br> La CNN lavora sui pixel, su un ramo del tutto indipendente.</p>
+    </section>
+
+    <!-- ============ 4d · TECNOLOGIE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Tecnologie</span></div>
+      <div class="kicker reveal">Gli strumenti usati</div>
+      <h2 class="reveal">Con cosa è costruito</h2>
+      <div class="cols c2 reveal" style="margin-top:34px;gap:30px">
+        <div class="colcard" style="border-top:4px solid var(--green)">
+          <div style="display:flex;align-items:center;gap:18px;margin-bottom:10px"><span style="font-size:46px">🐍</span><h3 style="margin:0">Python</h3></div>
+          <p>Linguaggio dell'intero progetto. Librerie principali: <b>NumPy</b> per array e algebra, <b>OpenCV</b> per immagini e omografia, <b>scikit-learn</b> per metriche e split, <b>Matplotlib</b> per i grafici.</p>
+        </div>
+        <div class="colcard" style="border-top:4px solid var(--blue)">
+          <div style="display:flex;align-items:center;gap:18px;margin-bottom:10px"><span style="font-size:46px">🔥</span><h3 style="margin:0">PyTorch</h3></div>
+          <p>Framework di deep learning: definizione, addestramento e inferenza della rete su keypoint e della CNN, con precisione mista automatica e scheduler del learning rate.</p>
+        </div>
+        <div class="colcard" style="border-top:4px solid var(--terra)">
+          <div style="display:flex;align-items:center;gap:18px;margin-bottom:10px"><span style="font-size:46px">✋</span><h3 style="margin:0">MediaPipe Hands</h3></div>
+          <p>Rilevatore di mani di Google: estrae i <b>21 keypoint</b> della mano che alimentano sia l'euristico sia la rete su keypoint.</p>
+          <div class="cite" style="margin-top:auto;padding-top:12px">Zhang et al., «MediaPipe Hands», arXiv:2006.10214, 2020</div>
+        </div>
+        <div class="colcard" style="border-top:4px solid var(--fog3)">
+          <div style="display:flex;align-items:center;gap:18px;margin-bottom:10px"><span style="font-size:46px">🗂️</span><h3 style="margin:0">Dataset HaGRID</h3></div>
+          <p>Dataset pubblico di gesti statici della mano, nella <b>versione lightweight a 512×512</b>. Copre le <b>15 classi</b> usate qui, suddiviso in <b>train / validation / test</b> con proporzione <b>80 / 10 / 10</b>. <div class="cite" style="margin-top:auto;padding-top:12px">github.com/hukenovs/hagrid</div>
+        </div>
+      </div>
     </section>
 
     <!-- ============ 5 · PIPELINE DATI / OUTPUT ============ -->
@@ -428,21 +477,24 @@ body.editing .edit-banner{ display:block; }
       <h2 class="reveal">La mano diventa <span class="ag">geometria</span></h2>
       <div class="split vtext" style="margin-top:24px">
         <div>
-          <p class="prose tight reveal" style="margin-top:18px;font-size:27px">Un rilevatore di mani estrae da ogni immagine <b>21 punti caratteristici</b> con le loro coordinate, più gli <b>angoli di piegamento</b> delle dita: in tutto un vettore di <span class="hlg">73 valori</span> che descrive la posa, non più i pixel.</p>
-          <table class="extable reveal" style="margin-top:18px;font-size:23px">
-            <caption>Esempio (estratto): coordinate relative al polso</caption>
-            <thead><tr><th>punto</th><th>x</th><th>y</th><th>z</th></tr></thead>
-            <tbody>
-              <tr><td>polso</td><td>0.00</td><td>0.00</td><td>0.00</td></tr>
-              <tr><td>punta pollice</td><td>−0.24</td><td>−0.50</td><td>−0.04</td></tr>
-              <tr><td>punta indice</td><td>−0.49</td><td>−0.35</td><td>−0.02</td></tr>
-            </tbody>
-          </table>
-          <p class="exnote reveal">→ 21 punti × 3 coord. + 10 angoli. La CNN invece riceve l'immagine intera.</p>
+          <p class="prose tight reveal" style="margin-top:18px;font-size:26px">Un rilevatore di mani estrae da ogni immagine <b>21 punti caratteristici</b> con le loro coordinate. MediaPipe fornisce solo i punti: i <b>10 angoli di piegamento</b> delle dita li <b>calcoliamo noi</b> dai punti. In tutto un vettore di <span class="hlg">73 valori</span> che descrive la posa, non più i pixel.</p>
+          <div class="reveal" style="display:flex;align-items:center;gap:36px;margin-top:14px">
+            <table class="extable" style="font-size:22px;margin-top:0">
+              <caption>Esempio: coordinate relative al polso</caption>
+              <thead><tr><th>punto</th><th>x</th><th>y</th><th>z</th></tr></thead>
+              <tbody>
+                <tr><td>polso</td><td>0.00</td><td>0.00</td><td>0.00</td></tr>
+                <tr><td>punta pollice</td><td>−0.24</td><td>−0.50</td><td>−0.04</td></tr>
+                <tr><td>punta indice</td><td>−0.49</td><td>−0.35</td><td>−0.02</td></tr>
+              </tbody>
+            </table>
+            <div class="formula" style="font-size:28px;flex:0 0 auto">θ = arccos<i style="font-style:normal">(</i><span class="frac"><span class="num" style="white-space:nowrap">v₁ · v₂</span><span class="den" style="white-space:nowrap">‖v₁‖·‖v₂‖</span></span><i style="font-style:normal">)</i></div>
+          </div>
+          <p class="exnote reveal" style="margin-top:12px">A sinistra le <b>coordinate</b> dei punti; a destra l'<b>angolo</b> per ogni terna di giunti, con v₁ = P<sub>a</sub> − P<sub>b</sub>, v₂ = P<sub>c</sub> − P<sub>b</sub>. <b>10 angoli</b> in totale; la CNN invece riceve l'immagine intera.</p>
         </div>
-        <div class="reveal" style="display:flex;justify-content:center">
+        <div class="reveal" style="display:flex;justify-content:flex-end;padding-right:30px">
           <!-- HAND LANDMARK SVG -->
-          <svg width="460" height="470" viewBox="0 0 520 540">
+          <svg width="600" height="600" viewBox="0 80 520 540">
             <defs><style>.bone{stroke:#46C58A;stroke-width:4;fill:none;opacity:.55}.pt{fill:#4C9BF0}.wr{fill:#F2956F}</style></defs>
             <!-- bones -->
             <g class="bone">
@@ -461,22 +513,13 @@ body.editing .edit-banner{ display:block; }
               <circle cx="300" cy="410" r="9"/><circle cx="355" cy="360" r="9"/><circle cx="395" cy="325" r="11"/>
             </g>
             <circle class="wr" cx="260" cy="470" r="15"/>
-            <text x="260" y="512" fill="#8AA0B8" font-family="JetBrains Mono" font-size="20" text-anchor="middle">21 landmark + angoli</text>
+            <text x="260" y="512" fill="#8AA0B8" font-family="JetBrains Mono" font-size="20" text-anchor="middle">21 landmark + 10 angoli</text>
           </svg>
         </div>
       </div>
       <div class="note reveal" style="bottom:48px;padding:20px 36px">
         <p style="font-size:24px"><span class="ntitle">Formazione dell'immagine</span>Il sensore cattura un solo colore per pixel: il colore pieno è poi <span class="em">ricostruito per interpolazione</span> (demosaicing). La profondità è solo relativa → mano trattata come quasi-piatta (weak perspective), ipotesi valida vista la distanza tipica dalla camera.</p>
       </div>
-    </section>
-
-    <!-- ============ 6 · PIPELINE DIAGRAM ============ -->
-    <section class="slide">
-      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>La pipeline completa</span></div>
-      <div class="kicker reveal">Due strade, un confronto</div>
-      <h2 class="reveal">Dal dataset ai tre classificatori</h2>
-      <div class="imgwrap reveal"><div class="card"><img src="assets/00_pipeline.png" alt="Pipeline" style="width:1800px"></div></div>
-      <p class="caption reveal">Euristico e rete su keypoint condividono lo stesso input geometrico. <br> La CNN lavora sui pixel, su un ramo del tutto indipendente.</p>
     </section>
 
     <!-- ============ 7 · DIVIDER 2 ============ -->
@@ -490,13 +533,17 @@ body.editing .edit-banner{ display:block; }
 
     <!-- ============ 8 · EURISTICO — IDEA ============ -->
     <section class="slide">
-      <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>L'idea</span></div>
-      <div class="kicker reveal">Descrivere la mano a parole, in geometria</div>
+      <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>L'idea e le regole</span></div>
+      <div class="kicker reveal">Descrivere la mano in geometria</div>
       <h2 class="reveal">Ogni dito ha <span class="at">uno stato</span></h2>
       <div class="split vtext">
         <div>
-          <p class="prose tight reveal">L'idea è semplice e completamente trasparente: per ogni dito decido se è <b>disteso</b>, <b>piegato</b> oppure <b>incrociato</b>, misurando quanto la punta è lontana dal centro del palmo, normalizzata sulla dimensione della mano. Cinque dita danno una <span class="hlt">"firma" di cinque stati</span> che identifica il gesto.</p>
-          <p class="prose tight reveal" style="margin-top:24px">È visione artificiale classica al 100%: nessun parametro, nessun addestramento, decisioni leggibili una per una.</p>
+          <ul class="points" style="margin-top:6px;max-width:780px">
+            <li class="b1 reveal" style="font-size:27px;margin-bottom:18px"><b>Stato per dito</b>: disteso, piegato o incrociato, dalla distanza normalizzata tra punta e palmo.</li>
+            <li class="b1 reveal" style="font-size:27px;margin-bottom:18px">Cinque stati formano una <b>firma</b> che identifica il gesto. Nessun addestramento, decisioni leggibili una per una.</li>
+            <li class="b1 reveal" style="font-size:27px;margin-bottom:18px">Quando la firma non basta, si guardano le <b>distanze relative</b>, come divaricazione e pizzico, con <b>soglie fisse</b> scelte a mano.</li>
+            <li class="b1 reveal" style="font-size:27px;margin-bottom:18px">Limite: preciso nel caso ideale, <b>fragile</b> con rotazioni e prospettive insolite.</li>
+          </ul>
         </div>
         <div class="reveal" style="display:flex;flex-direction:column;align-items:center;gap:26px">
           <!-- finger-state strip -->
@@ -510,22 +557,46 @@ body.editing .edit-banner{ display:block; }
             <g><rect class="fb" x="420" y="120" width="80" height="110" rx="10"/><circle class="dn" cx="460" cy="150" r="16"/><text class="fl" x="460" y="250">mignolo</text><text class="st" x="460" y="200" fill="#5E7088">piegato</text></g>
           </svg>
           <div style="font-family:var(--font-mono);font-size:24px;color:var(--fog2)">firma → <b style="color:#fff">[ piegato · disteso · disteso · piegato · piegato ]</b></div>
+          <div style="font-family:var(--font-mono);font-size:26px;color:var(--fog2)">→ il gesto è <b style="color:#46C58A">VICTORY</b> ✌️</div>
+          <div class="note reveal" style="position:relative;left:0;right:0;bottom:auto;margin-top:8px;padding:18px 26px;max-width:540px">
+            <p style="font-size:21px">La stessa firma può valere per più gesti: <b>TWO</b> e <b>VICTORY</b> hanno identica firma di dita e si separano solo dalla <span class="em" style="color:var(--terra)">divaricazione</span> indice-medio rispetto al palmo.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ============ 9 · EURISTICO — REGOLE & PROSPETTIVA ============ -->
+    <!-- ============ 9 · EURISTICO — POLLICE & OMOGRAFIA ============ -->
     <section class="slide">
-      <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>Regole e prospettiva</span></div>
-      <div class="kicker reveal">Dalla firma al gesto</div>
-      <h2 class="reveal">Dove le regole<br>diventano fragili</h2>
-      <p class="prose tight reveal">La firma delle cinque dita non sempre basta: gesti diversi possono avere le stesse dita distese e si distinguono solo da <b>distanze relative</b> — ad esempio quanto sono divaricate indice e medio, o quanto è chiuso il "pizzico" tra pollice e indice. Ogni distinzione è una <span class="hlt">soglia fissa</span>, scelta a mano.</p>
-      <div class="cols c2 reveal" style="margin-top:30px">
-        <div class="colcard e"><h3>Il caso difficile: il pollice</h3><p>Capire se il pollice è <b>incrociato</b> sul palmo è ambiguo: dipende fortemente dall'angolo di ripresa. Per gestirlo, la mano viene prima <b>"raddrizzata"</b> con una correzione prospettica, riportandola a una vista frontale standard prima di misurare.</p></div>
-        <div class="colcard e"><h3>Il prezzo da pagare</h3><p>Le soglie fisse funzionano sul caso ideale ma <b>si rompono</b> con rotazioni, prospettive insolite o mani diverse da quelle previste. È un sistema rigido: preciso quando le ipotesi reggono, cieco quando saltano.</p></div>
+      <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>Il pollice e la prospettiva</span></div>
+      <div class="kicker reveal">Raddrizzare la mano prima di misurare</div>
+      <h2 class="reveal">Il caso difficile: <span class="at">il pollice</span></h2>
+      <div class="split vtext">
+        <div>
+          <ul class="points" style="margin-top:6px;max-width:780px">
+            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Capire se il pollice è <b>incrociato</b> sul palmo dipende molto dall'angolo di ripresa.</li>
+            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Soluzione: la mano viene <b>raddrizzata</b> in vista frontale canonica con una <b>omografia</b>, la trasformazione che mappa un piano su un altro.</li>
+            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">I riferimenti si trovano con la <b>Trasformata di Hough</b>; da quattro corrispondenze si ricava la matrice di omografia, in OpenCV.</li>
+            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Riportati pollice e palmo in posizione standard, la soglia sull'angolo del pollice diventa affidabile.</li>
+          </ul>
+        </div>
+        <div class="reveal" style="display:flex;justify-content:center;align-items:center">
+          <!-- homography schema -->
+          <svg width="540" height="360" viewBox="0 0 540 360">
+            <defs><style>.q{fill:rgba(242,149,111,.10);stroke:#F2956F;stroke-width:3}.hp{fill:#4C9BF0}.lb{fill:#8AA0B8;font-family:JetBrains Mono;font-size:18px;text-anchor:middle}.hh{fill:#fff;font-family:Fraunces,serif;font-style:italic;font-size:34px;text-anchor:middle}</style></defs>
+            <polygon class="q" points="30,70 200,40 215,250 45,290"/>
+            <circle class="hp" cx="80" cy="110" r="6"/><circle class="hp" cx="150" cy="95" r="6"/><circle class="hp" cx="160" cy="200" r="6"/><circle class="hp" cx="90" cy="220" r="6"/>
+            <text class="lb" x="120" y="330">vista in prospettiva</text>
+            <line x1="248" y1="165" x2="318" y2="165" stroke="#CFDDEC" stroke-width="3"/>
+            <polygon points="318,158 336,165 318,172" fill="#CFDDEC"/>
+            <text class="hh" x="292" y="150">H</text>
+            <rect class="q" x="360" y="80" width="160" height="160" rx="4"/>
+            <circle class="hp" cx="395" cy="115" r="6"/><circle class="hp" cx="485" cy="115" r="6"/><circle class="hp" cx="485" cy="205" r="6"/><circle class="hp" cx="395" cy="205" r="6"/>
+            <text class="lb" x="440" y="330">vista canonica</text>
+          </svg>
+        </div>
       </div>
-      <div class="note reveal" style="bottom:60px">
-        <p><span class="ntitle">Trasformata di Hough & Omografia</span>I punti di riferimento si individuano cercando forme circolari note (<span class="em">Trasformata di Hough</span>); da questi si stima la <span class="em">trasformazione prospettica tra due piani</span> che riporta la mano in vista canonica — lo stesso principio della calibrazione geometrica di una camera.</p>
+      <div class="note reveal" style="bottom:46px">
+        <p><span class="ntitle">Trasformata di Hough & Omografia</span>La <span class="em">Trasformata di Hough</span> individua forme circolari note nell'immagine; da queste si stima la <span class="em">trasformazione prospettica tra due piani</span>, l'omografia, che riporta la mano in vista canonica. È lo stesso principio della calibrazione geometrica di una camera.</p>
       </div>
     </section>
 
@@ -533,8 +604,8 @@ body.editing .edit-banner{ display:block; }
     <section class="slide">
       <div class="hud reveal"><span style="color:var(--terra)"><span class="dot" style="color:var(--terra)">●</span> MODELLO 1 · EURISTICO</span><span>Le soglie fisse</span></div>
       <div class="kicker reveal">Ogni gesto è una firma di dita + una soglia</div>
-      <h2 class="reveal" style="font-size:62px">Le regole, <span class="at">esplicite</span></h2>
-      <table class="summary compact reveal" style="margin-top:22px">
+      <h2 class="reveal" style="font-size:52px">Le regole, <span class="at">esplicite</span></h2>
+      <table class="summary compact reveal" style="margin-top:14px">
         <thead><tr><th class="e">Gesto</th><th class="e">Firma dita · P I M A Mi</th><th class="e">Soglia / condizione chiave</th></tr></thead>
         <tbody>
           <tr><td>FIST ✊</td><td><span class="sig"><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>tutte e cinque le dita piegate</td></tr>
@@ -554,7 +625,7 @@ body.editing .edit-banner{ display:block; }
           <tr><td>NO GESTURE</td><td><span class="sig" style="letter-spacing:0">—</span></td><td>nessuna regola soddisfatta (fallback)</td></tr>
         </tbody>
       </table>
-      <p class="caption reveal" style="margin-top:18px;font-size:21px">Firma: <span style="color:var(--green)">● disteso</span> · <span style="color:var(--fog3)">● piegato</span> — dito disteso se distanza punta→palmo (normalizzata) <b>&gt; 0.6</b> · pollice <span style="color:var(--terra)">incrociato</span> se l'angolo in vista raddrizzata <b>&lt; 0.8</b>. Numeri tarati a mano: leggibili, ma ciechi appena cambia prospettiva.</p>
+      <p class="caption reveal" style="margin-top:12px;font-size:18px">Firma: <span style="color:var(--green)">● disteso</span> · <span style="color:var(--fog3)">● piegato</span>. Dito disteso se distanza punta→palmo normalizzata <b>&gt; 0.6</b>; pollice <span style="color:var(--terra)">incrociato</span> se l'angolo in vista raddrizzata <b>&lt; 0.8</b>. Soglie tarate a mano.</p>
     </section>
 
     <!-- ============ 10 · NN ARCHITETTURA ============ -->
@@ -564,13 +635,14 @@ body.editing .edit-banner{ display:block; }
       <h2 class="reveal">Geometria → <span class="ag">rete</span> → gesto</h2>
       <div class="split vtext">
         <div>
-          <p class="prose tight reveal">Il vettore di 73 numeri entra in una rete densa con tre strati nascosti da 50 neuroni e un'uscita su 15 classi. Non vede pixel: ragiona solo sulla <span class="hlg">forma della mano</span>. Proprio perché l'input è già compatto e informativo, la rete può restare <b>minuscola</b>.</p>
-          <div class="stats reveal" style="margin-top:34px">
-            <div class="stat n"><div class="v">9.565</div><div class="l">parametri</div></div>
-            <div class="stat n"><div class="v">0.04<span style="font-size:34px"> MB</span></div><div class="l">peso su disco</div></div>
-            <div class="stat n"><div class="v">73→15</div><div class="l">in → out</div></div>
-          </div>
-          <p class="exnote reveal" style="margin-top:26px">Addestrata finché la rete migliora sui dati di validazione, fermandosi quando smette di farlo (per non sovra-adattarsi) e tenendo i pesi migliori.</p>
+          <p class="prose tight reveal" style="font-size:26px">Il vettore di 73 numeri entra in una rete densa: tre strati nascosti da 50 neuroni, uscita su 15 classi. Non vede pixel, ragiona solo sulla <span class="hlg">forma della mano</span>.</p>
+          <ul class="points" style="margin-top:20px;max-width:780px">
+            <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Attivazioni ReLU</b> tra gli strati: non linearità semplice ed efficiente, evita la saturazione del gradiente.</li>
+            <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Loss cross-entropy</b>, lo standard per la classificazione multi-classe: penalizza le probabilità assegnate alla classe sbagliata.</li>
+            <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Ottimizzatore Adam</b> con <b>early stopping</b> sulla validation loss: l'addestramento si ferma quando smette di migliorare e tiene i pesi migliori, così non si sovra-adatta.</li>
+            <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Validazione holdout</b>: split fisso <b>80/10/10</b>, niente K-Fold; l'accuratezza finale è misurata sul <b>test set</b> mai usato in training.</li>
+            <li class="reveal" style="font-size:26px;margin-bottom:16px">Appena <b>9.565 parametri</b>: l'input è già compatto e informativo, la rete può restare minuscola.</li>
+          </ul>
         </div>
         <div class="reveal" style="display:flex;justify-content:center">
           <!-- NN architecture SVG -->
@@ -625,21 +697,74 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span style="color:var(--blue)"><span class="dot" style="color:var(--blue)">●</span> MODELLO 3 · CNN</span><span>Architettura & scelta progettuale</span></div>
       <div class="kicker reveal">Imparare dai pixel, senza ripartire da zero</div>
       <h2 class="reveal">Una rete già esperta,<br><span class="ac">ri-specializzata</span></h2>
-      <div class="split vtext">
+      <div class="split vtext" style="margin-top:20px">
         <div>
-          <p class="prose tight reveal">La CNN lavora direttamente sull'immagine e impara da sé quali dettagli osservare. Si parte da una rete <b>già addestrata su milioni di immagini</b> e la si ri-addestra interamente sul nostro problema (fine-tuning).</p>
-          <p class="prose tight reveal" style="margin-top:24px"><b>Perché non da zero?</b> Addestrare una rete profonda da capo richiederebbe enormi quantità di dati e tempo di calcolo. Riusare conoscenze visive di base già pronte — bordi, texture, forme — taglia drasticamente il <span class="hl">costo di training</span> e migliora l'accuratezza.</p>
+          <ul class="points" style="margin-top:0;max-width:820px">
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:16px">La CNN lavora direttamente sull'immagine e impara da sé quali dettagli osservare, senza feature progettate a mano.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:16px">Base: <b>MobileNetV3-Small</b>, architettura leggera per dispositivi mobili, già addestrata su milioni di immagini; viene ri-addestrata interamente sul nostro problema, il <b>fine-tuning</b>.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:16px"><b>Perché non da zero?</b> Riusare le conoscenze visive di base già pronte, bordi, texture e forme, taglia il <span class="hl">costo di training</span> e migliora l'accuratezza.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:16px">Ingresso a 224×224 pixel, circa <b>1,5 milioni</b> di parametri.</li>
+          </ul>
         </div>
-        <div class="reveal">
-          <div class="colcard c"><h3>In breve</h3>
-            <p style="margin-bottom:18px"><b>MobileNetV3-Small</b> — architettura leggera pensata per dispositivi mobili.</p>
-            <div class="stats" style="gap:34px;margin-top:8px">
-              <div class="stat c"><div class="v">~1,5<span style="font-size:34px">M</span></div><div class="l">parametri</div></div>
-              <div class="stat c"><div class="v">5,98<span style="font-size:34px"> MB</span></div><div class="l">peso su disco</div></div>
-            </div>
-            <p style="margin-top:22px">Ingresso a 224×224 pixel · ottimizzazione con riduzione automatica del passo di apprendimento e arresto anticipato.</p>
-          </div>
+        <div class="reveal" style="display:flex;justify-content:center;align-items:center">
+          <svg width="540" height="566" viewBox="0 0 420 440">
+            <defs><style>.cbx{fill:#18243A;stroke:#4C9BF0;stroke-width:2}.cbt{fill:#fff;font-family:JetBrains Mono;font-size:20px;font-weight:700;text-anchor:middle}.ccap{fill:#8AA0B8;font-family:JetBrains Mono;font-size:16px;text-anchor:middle}.car{stroke:#CFDDEC;stroke-width:3;fill:none}</style></defs>
+            <rect class="cbx" x="120" y="20" width="180" height="76" rx="10"/>
+            <text class="cbt" x="210" y="54">immagine</text><text class="ccap" x="210" y="78">224 × 224 × 3</text>
+            <line class="car" x1="210" y1="100" x2="210" y2="138"/><polygon points="203,138 210,154 217,138" fill="#CFDDEC"/>
+            <rect class="cbx" x="80" y="160" width="260" height="104" rx="10"/>
+            <text class="cbt" x="210" y="198">MobileNetV3-Small</text><text class="ccap" x="210" y="226">blocchi convoluzionali</text><text class="ccap" x="210" y="248">bordi → parti → gesto</text>
+            <line class="car" x1="210" y1="268" x2="210" y2="306"/><polygon points="203,306 210,322 217,306" fill="#CFDDEC"/>
+            <rect class="cbx" x="110" y="330" width="200" height="76" rx="10" style="stroke:#46C58A"/>
+            <text class="cbt" x="210" y="364">15 classi</text><text class="ccap" x="210" y="388">softmax</text>
+          </svg>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ 12b · CNN — IL FILTRO CONVOLUZIONALE (TEORIA) ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--blue)"><span class="dot" style="color:var(--blue)">●</span> MODELLO 3 · CNN</span><span>Il filtro convoluzionale</span></div>
+      <div class="kicker reveal">Dallo stesso filtro del corso, ma appreso</div>
+      <h2 class="reveal">Cos'è un <span class="ac">filtro convoluzionale</span></h2>
+      <div class="split vtext" style="margin-top:18px">
+        <div>
+          <ul class="points" style="margin-top:0;max-width:820px">
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">La convoluzione è un <b>filtro lineare</b>: un piccolo <b>kernel</b> scorre sull'immagine e in ogni posizione calcola una <b>somma pesata</b> dei pixel vicini, la stessa operazione dei filtri spaziali del corso.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px"><b>Filtri classici</b>: i pesi del kernel sono fissati a mano. Un kernel <b>gaussiano</b> leviga, i kernel di <b>Sobel</b> o il <b>Laplaciano</b> esaltano i bordi.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">In una <b>CNN</b> i pesi del kernel non sono fissati: vengono <b>appresi dai dati</b> durante il training. La rete scopre da sola quali filtri le servono.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">Impilando più convoluzioni si forma una <b>gerarchia</b>: bordi e contrasti, poi parti della mano, infine il gesto, l'equivalente appreso dell'analisi multi-scala.</li>
+          </ul>
+        </div>
+        <div class="reveal" style="display:flex;justify-content:center;align-items:center">
+          <svg width="500" height="420" viewBox="0 0 500 420">
+            <defs><style>.gc{fill:#18243A;stroke:#2a3a52;stroke-width:1.5}.win{fill:none;stroke:#4C9BF0;stroke-width:4}.kb{fill:#0C1320;stroke:#4C9BF0;stroke-width:2}.kt{fill:#CFDDEC;font-family:JetBrains Mono;font-size:18px;text-anchor:middle}.oc{fill:#46C58A;opacity:.85;stroke:#0C1320;stroke-width:1.5}.lab{fill:#CFDDEC;font-family:JetBrains Mono;font-size:21px;text-anchor:middle}.ar{stroke:#CFDDEC;stroke-width:3;fill:none}</style></defs>
+            <!-- input grid 5x5 -->
+            <g>
+              <rect class="gc" x="20" y="60" width="46" height="46"/><rect class="gc" x="66" y="60" width="46" height="46"/><rect class="gc" x="112" y="60" width="46" height="46"/><rect class="gc" x="158" y="60" width="46" height="46"/><rect class="gc" x="204" y="60" width="46" height="46"/>
+              <rect class="gc" x="20" y="106" width="46" height="46"/><rect class="gc" x="66" y="106" width="46" height="46"/><rect class="gc" x="112" y="106" width="46" height="46"/><rect class="gc" x="158" y="106" width="46" height="46"/><rect class="gc" x="204" y="106" width="46" height="46"/>
+              <rect class="gc" x="20" y="152" width="46" height="46"/><rect class="gc" x="66" y="152" width="46" height="46"/><rect class="gc" x="112" y="152" width="46" height="46"/><rect class="gc" x="158" y="152" width="46" height="46"/><rect class="gc" x="204" y="152" width="46" height="46"/>
+              <rect class="gc" x="20" y="198" width="46" height="46"/><rect class="gc" x="66" y="198" width="46" height="46"/><rect class="gc" x="112" y="198" width="46" height="46"/><rect class="gc" x="158" y="198" width="46" height="46"/><rect class="gc" x="204" y="198" width="46" height="46"/>
+              <rect class="gc" x="20" y="244" width="46" height="46"/><rect class="gc" x="66" y="244" width="46" height="46"/><rect class="gc" x="112" y="244" width="46" height="46"/><rect class="gc" x="158" y="244" width="46" height="46"/><rect class="gc" x="204" y="244" width="46" height="46"/>
+            </g>
+            <rect class="win" x="20" y="60" width="138" height="138"/>
+            <text class="lab" x="135" y="320">immagine</text>
+            <text class="lab" x="135" y="350">kernel 3×3 che scorre</text>
+            <!-- arrow -->
+            <line class="ar" x1="262" y1="129" x2="320" y2="129"/><polygon points="320,122 336,129 320,136" fill="#CFDDEC"/>
+            <text class="kt" x="298" y="112">∗</text>
+            <!-- output feature map -->
+            <g>
+              <rect class="oc" x="360" y="86" width="40" height="40"/><rect class="gc" x="400" y="86" width="40" height="40"/><rect class="gc" x="440" y="86" width="40" height="40"/>
+              <rect class="gc" x="360" y="126" width="40" height="40"/><rect class="gc" x="400" y="126" width="40" height="40"/><rect class="gc" x="440" y="126" width="40" height="40"/>
+              <rect class="gc" x="360" y="166" width="40" height="40"/><rect class="gc" x="400" y="166" width="40" height="40"/><rect class="gc" x="440" y="166" width="40" height="40"/>
+            </g>
+            <text class="lab" x="420" y="230">feature map</text>
+          </svg>
+        </div>
+      </div>
+      <div class="note reveal" style="position:relative;left:auto;right:auto;bottom:auto;margin-top:18px;border-left:6px solid var(--blue)">
+        <p style="font-size:23px"><span class="ntitle">Dal corso alla rete</span>I filtri visti a lezione, media e gaussiano per il <span class="em">smoothing</span>, Sobel e Laplaciano per i <span class="em">bordi</span>, sono convoluzioni con kernel scelti a mano. La CNN usa la <b>stessa identica operazione</b>, ma <b>impara i kernel</b> dai dati invece di progettarli.</p>
       </div>
     </section>
 
@@ -647,15 +772,59 @@ body.editing .edit-banner{ display:block; }
     <section class="slide">
       <div class="hud reveal"><span style="color:var(--blue)"><span class="dot" style="color:var(--blue)">●</span> MODELLO 3 · CNN</span><span>Robustezza & feature apprese</span></div>
       <div class="kicker reveal">Allenarsi al caos del mondo reale</div>
-      <h2 class="reveal">Cosa imparano i filtri</h2>
-      <p class="prose tight reveal">Per non memorizzare le foto ma <b>generalizzare</b>, durante l'addestramento ogni immagine viene perturbata: ribaltata, ruotata di poco, traslata, con colori e luminosità alterati. La rete impara così a riconoscere il gesto in condizioni sempre diverse.</p>
-      <div class="note reveal" style="bottom:auto;position:relative;margin-top:40px;border-radius:14px;border-left:6px solid var(--blue)">
-        <p><span class="ntitle">Edge detection & Scale-space</span>I primi strati imparano da soli a reagire a <span class="em">bordi e contrasti</span> — ciò che i rilevatori di bordo classici calcolano a mano. Gli strati successivi combinano questi segnali in angoli, poi in parti della mano, infine nel gesto: una <span class="em">gerarchia dal semplice al complesso</span>, equivalente <b>appreso</b> dell'analisi multi-scala classica.</p>
+      <h2 class="reveal" style="font-size:62px">Allenare e generalizzare</h2>
+      <div class="split vtext" style="margin-top:14px">
+        <div>
+          <p class="prose tight reveal" style="font-size:24px;margin-top:0">Per non memorizzare le foto ma <b>generalizzare</b>, ogni immagine è perturbata durante l'addestramento:</p>
+          <ul class="points" style="margin-top:14px;max-width:760px">
+            <li class="b3 reveal" style="font-size:24px;margin-bottom:13px">Ribaltamento orizzontale casuale, il gesto resta valido anche allo specchio.</li>
+            <li class="b3 reveal" style="font-size:24px;margin-bottom:13px">Rotazione casuale fino a 15 gradi, per mani inclinate.</li>
+            <li class="b3 reveal" style="font-size:24px;margin-bottom:13px">Traslazione e zoom casuali, fino al 10 per cento e scala da 0,9 a 1,1.</li>
+            <li class="b3 reveal" style="font-size:24px;margin-bottom:13px">Variazione casuale di colore e luminosità, contro fotocamere e luci diverse.</li>
+          </ul>
+        </div>
+        <div class="reveal">
+          <div class="colcard c" style="padding:26px 30px">
+            <h3 style="font-size:28px;margin-bottom:14px">Dettagli di training</h3>
+            <ul style="list-style:none;font-size:22px;line-height:1.5;color:var(--fog2)">
+              <li style="margin-bottom:9px">Ottimizzatore <b>AdamW</b> con weight decay</li>
+              <li style="margin-bottom:9px">Loss <b>cross-entropy</b> con label smoothing 0,1</li>
+              <li style="margin-bottom:9px">Precisione mista <b>AMP</b> per velocità su GPU</li>
+              <li style="margin-bottom:9px">Scheduler <b>ReduceLROnPlateau</b> sulla val loss</li>
+              <li style="margin-bottom:9px">Max <b>50 epoche</b>, early stopping con patience 5</li>
+              <li style="margin-bottom:9px">Attivazioni <b>Hard-Swish</b> di MobileNet</li>
+              <li style="margin-bottom:9px">Validazione <b>holdout 80/10/10</b>, senza K-Fold</li>
+            </ul>
+          </div>
+        </div>
       </div>
-      <div class="cols c3 reveal" style="margin-top:36px">
-        <div class="colcard c" style="padding:24px 28px"><h3 style="font-size:28px">Strati iniziali</h3><p>bordi, contrasti, texture</p></div>
-        <div class="colcard c" style="padding:24px 28px"><h3 style="font-size:28px">Strati intermedi</h3><p>angoli, curve, parti di dito</p></div>
-        <div class="colcard c" style="padding:24px 28px"><h3 style="font-size:28px">Strati profondi</h3><p>configurazione → gesto</p></div>
+    </section>
+
+    <!-- ============ 13b · CNN — COSA APPRENDONO I LAYER ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span style="color:var(--blue)"><span class="dot" style="color:var(--blue)">●</span> MODELLO 3 · CNN</span><span>Le feature apprese</span></div>
+      <div class="kicker reveal">Dalla mia rete, strato dopo strato</div>
+      <h2 class="reveal">Cosa apprendono i <span class="ac">layer</span></h2>
+      <p class="prose tight reveal" style="font-size:26px">Impilando le convoluzioni, gli strati della rete imparano rappresentazioni <b>sempre più astratte</b>: dal pixel grezzo alla configurazione della mano. Più si va in profondità, più cresce il <b>campo recettivo</b>, ossia la porzione di immagine che ogni neurone osserva.</p>
+      <div class="cols c3 reveal" style="margin-top:34px">
+        <div class="colcard c">
+          <svg width="120" height="60" viewBox="0 0 120 60" style="margin-bottom:14px"><g stroke="#4C9BF0" stroke-width="4" fill="none"><line x1="10" y1="50" x2="50" y2="10"/><line x1="40" y1="52" x2="80" y2="12"/><line x1="70" y1="50" x2="110" y2="10"/></g></svg>
+          <h3 style="font-size:30px">Strati iniziali</h3>
+          <p><b>Bordi, contrasti e texture.</b> Filtri simili a Sobel o gaussiano, ma <b>appresi</b>: rispondono alle transizioni di luminosità.</p>
+        </div>
+        <div class="colcard c">
+          <svg width="120" height="60" viewBox="0 0 120 60" style="margin-bottom:14px"><path d="M20 50 L20 14 L86 14" stroke="#4C9BF0" stroke-width="5" fill="none"/><circle cx="20" cy="14" r="6" fill="#46C58A"/></svg>
+          <h3 style="font-size:30px">Strati intermedi</h3>
+          <p>Combinano i bordi in <b>angoli, curve e parti di dito</b>: i pezzi ricorrenti che compongono la mano.</p>
+        </div>
+        <div class="colcard c">
+          <svg width="120" height="60" viewBox="0 0 120 60" style="margin-bottom:14px"><text x="60" y="48" font-size="46" text-anchor="middle">✋</text></svg>
+          <h3 style="font-size:30px">Strati profondi</h3>
+          <p>Assemblano le parti nella <b>configurazione completa</b> della mano: la posa che identifica il gesto.</p>
+        </div>
+      </div>
+      <div class="note reveal" style="bottom:40px;border-left:6px solid var(--blue)">
+        <p style="font-size:23px"><span class="ntitle">Gerarchia & Scale-space</span>È la stessa logica dell'analisi <span class="em">multi-scala</span> classica: combinare risposte semplici, i bordi, in strutture via via più complesse. La differenza è che qui la gerarchia non è progettata a mano, ma <b>appresa dai dati</b>.</p>
       </div>
     </section>
 
@@ -673,8 +842,8 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Accuratezza complessiva</span></div>
       <div class="kicker reveal">Il primo verdetto</div>
       <h2 class="reveal">CNN <span class="ac">94.67%</span> · rete 90.82% · euristico 57.61%</h2>
-      <div class="imgwrap reveal"><div class="card"><img src="assets/01_accuracy.png" alt="Accuratezza" style="width:720px"></div></div>
-      <p class="caption reveal">Il salto dalla rete alla CNN è <b>piccolo</b>; quello verso l'euristico è <b>enorme</b>. Imparare dai dati paga — molto.</p>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/01_accuracy.png" alt="Accuratezza" style="width:1000px"></div></div>
+      <p class="caption reveal">Il salto dalla rete alla CNN è <b>piccolo</b>; quello verso l'euristico è <b>enorme</b>. Imparare dai dati paga, e molto.</p>
     </section>
 
     <!-- ============ 16 · MATRICI CONFUSIONE ============ -->
@@ -682,10 +851,10 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Matrici di confusione</span></div>
       <div class="kicker reveal">Dove finiscono gli errori</div>
       <h2 class="reveal">Quanto è pulita la diagonale</h2>
-      <div class="cardrow reveal">
-        <figure><div class="card"><img src="assets/cm_heur.png" alt="CM Euristico" style="width:470px"></div><figcaption style="color:var(--terra)">Euristico</figcaption></figure>
-        <figure><div class="card"><img src="assets/cm_nn.png" alt="CM rete" style="width:470px"></div><figcaption style="color:var(--green)">Rete su keypoint</figcaption></figure>
-        <figure><div class="card"><img src="assets/cm_cnn.png" alt="CM CNN" style="width:470px"></div><figcaption style="color:var(--blue)">CNN</figcaption></figure>
+      <div class="cardrow reveal" style="gap:14px;margin-top:24px">
+        <figure><div class="card" style="padding:8px"><img src="assets/cm_heur.png" alt="CM Euristico" style="width:560px"></div><figcaption style="color:var(--terra)">Euristico</figcaption></figure>
+        <figure><div class="card" style="padding:8px"><img src="assets/cm_nn.png" alt="CM rete" style="width:560px"></div><figcaption style="color:var(--green)">Rete su keypoint</figcaption></figure>
+        <figure><div class="card" style="padding:8px"><img src="assets/cm_cnn.png" alt="CM CNN" style="width:560px"></div><figcaption style="color:var(--blue)">CNN</figcaption></figure>
       </div>
       <p class="caption reveal">La CNN concentra quasi tutto sulla diagonale; l'euristico disperde interi gesti su classi sbagliate.</p>
     </section>
@@ -695,7 +864,7 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>F1-score per classe</span></div>
       <div class="kicker reveal">Il dettaglio gesto per gesto</div>
       <h2 class="reveal">Chi vince dove</h2>
-      <div class="imgwrap reveal"><div class="card"><img src="assets/02_f1.png" alt="F1 per classe" style="width:1340px"></div></div>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/02_f1.png" alt="F1 per classe" style="width:1380px"></div></div>
       <p class="caption reveal">L'euristico crolla su alcuni gesti aperti (mano e stop quasi a zero) ma regge su altri; la <b>CNN</b> è la più equilibrata su tutte le classi.</p>
     </section>
 
@@ -704,7 +873,7 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Precision · Recall · F1 medi</span></div>
       <div class="kicker reveal">Oltre l'accuratezza: la media macro sulle 15 classi</div>
       <h2 class="reveal" style="font-size:66px">Precision, recall e F1 a confronto</h2>
-      <p class="prose tight reveal" style="font-size:28px">L'accuratezza da sola può ingannare con classi sbilanciate. Le medie <b>macro</b> — stesso peso a ognuna delle 15 classi — dicono quanto ogni rete è <b>equilibrata</b>: la <span class="hl">precision</span> misura quanti gesti predetti sono giusti, il <span class="hlg">recall</span> quanti gesti reali vengono trovati, l'<span class="hlt">F1</span> ne è la media armonica.</p>
+      <p class="prose tight reveal" style="font-size:28px">L'accuratezza da sola può ingannare con classi sbilanciate. Le medie <b>macro</b>, che danno lo stesso peso a ognuna delle 15 classi, dicono quanto ogni rete è <b>equilibrata</b>: la <span class="hl">precision</span> misura quanti gesti predetti sono giusti, il <span class="hlg">recall</span> quanti gesti reali vengono trovati, l'<span class="hlt">F1</span> ne è la media armonica.</p>
       <table class="summary reveal" style="margin-top:28px">
         <thead><tr><th class="lbl">Metrica (media macro)</th><th class="e">Euristico</th><th class="n">Rete su keypoint</th><th class="c">CNN</th></tr></thead>
         <tbody>
@@ -721,12 +890,11 @@ body.editing .edit-banner{ display:block; }
     <section class="slide">
       <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Curve di addestramento</span></div>
       <div class="kicker reveal">Come hanno imparato</div>
-      <h2 class="reveal">Convergenza e arresto</h2>
-      <div class="cardrow reveal">
-        <figure><div class="card"><img src="assets/hist_nn.png" alt="History rete" style="width:760px"></div><figcaption style="color:var(--green)">Rete su keypoint</figcaption></figure>
-        <figure><div class="card"><img src="assets/hist_cnn.png" alt="History CNN" style="width:760px"></div><figcaption style="color:var(--blue)">CNN</figcaption></figure>
+      <h2 class="reveal" style="font-size:60px">Convergenza e arresto</h2>
+      <div class="reveal" style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:14px">
+        <figure><div class="card" style="padding:14px"><img src="assets/hist_nn.png" alt="History rete" style="width:860px"></div><figcaption style="color:var(--green);font-family:var(--font-mono);font-weight:700;font-size:21px;text-align:center;margin-top:6px">Rete su keypoint</figcaption></figure>
+        <figure><div class="card" style="padding:14px"><img src="assets/hist_cnn.png" alt="History CNN" style="width:860px"></div><figcaption style="color:var(--blue);font-family:var(--font-mono);font-weight:700;font-size:21px;text-align:center;margin-top:6px">CNN</figcaption></figure>
       </div>
-      <p class="caption reveal">Entrambe si fermano quando la validazione smette di migliorare; nella CNN si vedono i gradini dovuti alla riduzione automatica del passo di apprendimento.</p>
     </section>
 
     <!-- ============ 19 · DIVIDER 4 ============ -->
@@ -770,7 +938,7 @@ body.editing .edit-banner{ display:block; }
       <h2 class="reveal" style="font-size:66px">Il verdetto in due passi</h2>
       <div class="split" style="margin-top:30px">
         <div>
-          <div class="colcard" style="border-top:4px solid var(--blue)">
+          <div class="colcard reveal" style="border-top:4px solid var(--blue)">
             <h3>① Cochran's Q</h3>
             <div class="stats" style="gap:40px;margin-top:6px">
               <div class="stat c"><div class="v">22.015</div><div class="l">statistica Q (df = 2)</div></div>
@@ -781,7 +949,7 @@ body.editing .edit-banner{ display:block; }
           <p class="caption reveal" style="margin-top:24px;text-align:left">② Le coppie poi confermano l'ordine: ogni p-value è praticamente nullo → <b>CNN &gt; rete &gt; euristico</b> è solido.</p>
         </div>
         <figure class="reveal">
-          <div class="card"><img src="assets/03_mcnemar.png" alt="McNemar" style="width:760px"></div>
+          <div class="card"><img src="assets/03_mcnemar.png" alt="McNemar" style="width:900px"></div>
           <figcaption style="color:var(--green);font-family:var(--font-mono);font-size:23px;text-align:center;margin-top:14px">② McNemar — confronti a coppie</figcaption>
         </figure>
       </div>
@@ -792,8 +960,8 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 04 · STATISTICA</span><span>Accuratezza vs velocità</span></div>
       <div class="kicker reveal">Non esiste il modello migliore in assoluto</div>
       <h2 class="reveal">Il miglior <span class="ag">compromesso</span></h2>
-      <div class="imgwrap reveal"><div class="card"><img src="assets/05_tradeoff.png" alt="Trade-off" style="width:820px"></div></div>
-      <p class="caption reveal">La rete su keypoint sta nell'angolo giusto: quasi accurata come la CNN, ma molto più veloce e leggera — ideale per il <b>tempo reale</b>.</p>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/05_tradeoff.png" alt="Trade-off" style="width:1000px"></div></div>
+      <p class="caption reveal">La rete su keypoint sta nell'angolo giusto: quasi accurata come la CNN, ma molto più veloce e leggera, ideale per il <b>tempo reale</b>.</p>
     </section>
 
     <!-- ============ 23 · DIVIDER 5 ============ -->
@@ -810,7 +978,7 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 05 · TEMPO &amp; SPAZIO</span><span>Latenza & memoria</span></div>
       <div class="kicker reveal">Un risultato controintuitivo</div>
       <h2 class="reveal">Il "senza parametri" è il <span class="at">più lento</span></h2>
-      <div class="imgwrap reveal"><div class="card"><img src="assets/04_efficiency.png" alt="Efficienza" style="width:1320px"></div></div>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/04_efficiency.png" alt="Efficienza" style="width:1560px"></div></div>
       <p class="caption reveal">L'euristico (8.87 ms) paga le pesanti operazioni geometriche su CPU; la rete su keypoint (0.27 ms) riduce tutto ad algebra lineare; la CNN (4.48 ms) resta competitiva sfruttando la GPU.</p>
     </section>
 
@@ -818,7 +986,7 @@ body.editing .edit-banner{ display:block; }
     <section class="slide">
       <div class="hud reveal"><span><span class="dot">●</span> 05 · TEMPO &amp; SPAZIO</span><span>Robustezza & dipendenza dall'immagine</span></div>
       <div class="kicker reveal">Quando MediaPipe fallisce</div>
-      <h2 class="reveal" style="font-size:72px">Analisi spaziale</h2>
+      <h2 class="reveal" style="font-size:60px">Robustezza e dipendenza<br>dal rilevatore</h2>
       <div class="split">
         <ul class="points">
           <li class="b2 reveal">NN ed Euristico <b>dipendono</b> dai landmark MediaPipe</li>
@@ -835,25 +1003,11 @@ body.editing .edit-banner{ display:block; }
 
     <!-- ============ 25b · DIVIDER · CONFRONTO COL PAPER ============ -->
     <section class="slide divider">
-      <div class="dghost">doi</div>
+      <div class="dghost">vs</div>
       <div class="dnum reveal">Riproduzione</div>
       <div class="dbar reveal"></div>
-      <h2 class="reveal">Io e il<br>paper originale</h2>
-      <div class="dsub reveal">Cosa ho ripreso, cosa ho cambiato, e come cambiano i risultati.</div>
-    </section>
-
-    <!-- ============ 25c · IL PAPER · SIMILITUDINI ============ -->
-    <section class="slide">
-      <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Il punto di partenza</span></div>
-      <div class="kicker reveal">Google Research · 2021</div>
-      <h2 class="reveal" style="font-size:58px">«On-device Real-time<br>Hand Gesture Recognition»</h2>
-      <p class="prose tight reveal" style="font-size:28px">Il paper di riferimento propone un sistema HGR <b>on-device</b> da una singola camera RGB: <b>MediaPipe Hands</b> stima i keypoint della mano, poi un classificatore lavora sulla <b>geometria</b>, non sui pixel. Propone <b>due</b> classificatori — uno <span class="hlt">euristico</span> e una piccola <span class="hlg">rete neurale</span>. Da qui sono partito.</p>
-      <div class="cols c3 reveal" style="margin-top:28px">
-        <div class="colcard" style="border-top:4px solid var(--fog3)"><h3>Pipeline a keypoint</h3><p>Stessa idea di fondo: <b>rilevatore di mani → feature geometriche → classificatore</b>, eseguito solo quando una mano è presente.</p></div>
-        <div class="colcard e"><h3>Classificatore euristico</h3><p>Stessa filosofia: stato discreto di ogni dito (disteso / piegato / incrociato) e regole esplicite su angoli e distanze normalizzate.</p></div>
-        <div class="colcard n"><h3>Rete su keypoint</h3><p>Stessa architettura compatta: <b>strati densi da 50 neuroni</b> sulle feature della posa, non sui pixel grezzi.</p></div>
-      </div>
-      <div class="cite reveal" style="margin-top:22px">Sung et al., «On-device Real-time Hand Gesture Recognition», Google Research · arXiv:2111.00038 · 2021</div>
+      <h2 class="reveal">La mia implementazione vs<br>il paper originale</h2>
+      <div class="dsub reveal">Cosa ho cambiato rispetto al paper, e come cambiano i risultati.</div>
     </section>
 
     <!-- ============ 25d · DIFFERENZE METODOLOGICHE ============ -->
@@ -864,7 +1018,7 @@ body.editing .edit-banner{ display:block; }
       <table class="summary reveal" style="margin-top:24px">
         <thead><tr><th class="lbl"></th><th class="e">Paper (Google 2021)</th><th class="c">Il mio progetto</th></tr></thead>
         <tbody>
-          <tr><td>Classificatori</td><td>2 — euristico + rete</td><td class="win">3 — + CNN sui pixel</td></tr>
+          <tr><td>Classificatori</td><td>2, euristico e rete</td><td class="win">3, con la CNN sui pixel</td></tr>
           <tr><td>Gesti</td><td>6 supportati (21 nel dataset)</td><td>15 + NO GESTURE</td></tr>
           <tr><td>Dataset</td><td>in-house privato</td><td><b>HaGRID</b> pubblico</td></tr>
           <tr><td>Feature della rete</td><td>3D world-metric (intrinseche + estrinseche)</td><td>landmark 2D rel. al polso + 10 angoli</td></tr>
@@ -880,33 +1034,17 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Le differenze nei risultati</span></div>
       <div class="kicker reveal">Numeri vicini, ma non confrontabili 1:1</div>
       <h2 class="reveal" style="font-size:62px">Risultati: paper vs miei</h2>
-      <table class="summary reveal" style="margin-top:22px">
+      <table class="summary reveal" style="margin-top:24px">
         <thead><tr><th class="lbl"></th><th class="e">Euristico</th><th class="n">Rete su keypoint</th><th class="c">CNN</th></tr></thead>
         <tbody>
-          <tr><td>Paper — recall</td><td>44.4% <small>@ 0.86% FPR · 6 gesti</small></td><td>87.9% <small>@ 1% FPR · 6 gesti</small></td><td>— <small>assente nel paper</small></td></tr>
-          <tr><td>Mio — recall @ 1% FPR</td><td>58.2% <small>@ 62.8% FPR reale</small></td><td>90.9%</td><td class="win">97.2%</td></tr>
-          <tr><td>Mio — recall (macro)</td><td>55.3%</td><td>90.4%</td><td class="win">91.9%</td></tr>
-          <tr><td>Mia — F1 (macro)</td><td>0.507</td><td>0.909</td><td class="win">0.920</td></tr>
+          <tr><td>Paper, recall medio</td><td>44.4%</td><td>87.9%</td><td>assente</td></tr>
+          <tr><td>Mio, recall macro</td><td class="win">55.3%</td><td class="win">90.4%</td><td class="win">91.9%</td></tr>
+          <tr><td>Mio, F1 macro</td><td>0.507</td><td>0.909</td><td class="win">0.920</td></tr>
+          <tr><td>Mia accuratezza</td><td>57.6%</td><td>90.8%</td><td class="win">94.7%</td></tr>
         </tbody>
       </table>
-      <div class="note reveal" style="position:relative;bottom:auto;margin-top:24px;border-left:6px solid var(--terra)">
-        <p><span class="ntitle" style="color:var(--terra)">Attenzione al confronto</span>Sulla <b>stessa metrica del paper</b> (recall @ 1% FPR) la mia rete tiene il passo: <b>90.9% vs 87.9%</b>. L'euristico però non raggiunge l'1% di FPR — sul sottoinsieme con mano rilevata i campioni NO GESTURE (i negativi) sono pochi, quindi spara un gesto troppo spesso e il suo FPR reale schizza al <b>62.8%</b>: il suo punto di lavoro non è comparabile con lo 0.86% del paper. Restano comunque dataset e numero di gesti diversi (<b>15 vs 6</b>): lettura qualitativa, <span class="em" style="color:var(--terra)">stesse logiche, ordini di grandezza coerenti</span> — e la CNN che ho aggiunto le supera entrambe.</p>
-      </div>
-    </section>
-
-    <!-- ============ 25f · PERCHÉ I MIEI NUMERI SONO PIÙ ALTI ============ -->
-    <section class="slide">
-      <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Perché i miei numeri sono più alti</span></div>
-      <div class="kicker reveal">Non un modello migliore, un benchmark più benevolo</div>
-      <h2 class="reveal" style="font-size:64px">Da dove viene il divario</h2>
-      <ul class="points" style="margin-top:30px">
-        <li class="b1 reveal"><b>Negativi molto più duri nel paper.</b> Loro raccolgono <b>hard-negative</b> in-the-wild (6478 utenti): pose "quasi-gesto" da non confondere. Io ho <b>654 NO GESTURE</b> curati e facili.<small>Con negativi facili, fissare l'1% di FPR non costa quasi nulla → recall alto.</small></li>
-        <li class="b2 reveal"><b>Dataset più pulito.</b> HaGRID è centrato sulla mano e ben illuminato; il paper testa su video reali con occlusioni, sfondi e angoli estremi.</li>
-        <li class="b3 reveal"><b>Stessa distribuzione train/test.</b> I miei train e test vengono dallo stesso HaGRID (split 80/10/10) → stima <b>ottimistica</b>. Il paper valuta su un test set separato e più vario.</li>
-        <li class="b3 reveal"><b>La metrica @1% FPR amplifica il divario.</b> È proprio il punto in cui i negativi duri del paper mordono di più.</li>
-      </ul>
-      <div class="note reveal" style="bottom:46px">
-        <p><span class="ntitle">In sintesi</span>I miei valori più alti riflettono un <b>benchmark più benevolo</b> (negativi pochi e facili, split sulla stessa distribuzione), <span class="em">non necessariamente un modello superiore</span>. È il motivo per cui il confronto resta <b>qualitativo</b>: stesse logiche, ordini di grandezza coerenti.</p>
+      <div class="note reveal" style="position:relative;left:auto;right:auto;bottom:auto;margin-top:30px">
+        <p><span class="ntitle">Lettura</span>La riproduzione <b>regge e migliora</b> rispetto al paper: la mia rete su keypoint raggiunge un recall medio del <b>90.4%</b> contro l'87.9% del lavoro originale, e l'euristico riprodotto fa anche meglio del loro. In più, il terzo ramo che ho aggiunto, la <b>CNN sui pixel</b>, supera entrambi i classificatori storici e tocca il <b>94.7%</b> di accuratezza. Restano dataset e numero di gesti diversi, quindi il confronto va letto in modo <span class="em">qualitativo</span>, ma il quadro è chiaro: <b>stesse logiche, risultati migliori, una capacità in più</b>.</p>
       </div>
     </section>
 
@@ -926,15 +1064,15 @@ body.editing .edit-banner{ display:block; }
       <h2 class="reveal">Guardiamoli lavorare</h2>
       <div class="cols c3 reveal" style="margin-top:40px">
         <figure>
-          <div class="ph" style="height:480px"><div class="picon">🎬</div><div class="plabel">GIF · Euristico</div><div class="ppath">assets/demo_euristico.gif</div></div>
+          <div class="ph" style="height:480px"><img src="assets/demo_euristico.gif" alt="Demo Euristico" style="object-fit:contain"></div>
           <figcaption style="color:var(--terra);font-family:var(--font-mono);font-weight:700;font-size:24px;text-align:center;margin-top:14px">Euristico</figcaption>
         </figure>
         <figure>
-          <div class="ph" style="height:480px"><div class="picon">🎬</div><div class="plabel">GIF · Rete su keypoint</div><div class="ppath">assets/demo_nn.gif</div></div>
+          <div class="ph" style="height:480px"><img src="assets/demo_nn.gif" alt="Demo Rete su keypoint" style="object-fit:contain"></div>
           <figcaption style="color:var(--green);font-family:var(--font-mono);font-weight:700;font-size:24px;text-align:center;margin-top:14px">Rete su keypoint</figcaption>
         </figure>
         <figure>
-          <div class="ph" style="height:480px"><div class="picon">🎬</div><div class="plabel">GIF · CNN</div><div class="ppath">assets/demo_cnn.gif</div></div>
+          <div class="ph" style="height:480px"><img src="assets/demo_cnn.gif" alt="Demo CNN" style="object-fit:contain"></div>
           <figcaption style="color:var(--blue);font-family:var(--font-mono);font-weight:700;font-size:24px;text-align:center;margin-top:14px">CNN</figcaption>
         </figure>
       </div>
@@ -972,11 +1110,11 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 06 · SINTESI</span><span>Conclusioni</span></div>
       <div class="kicker reveal">Cosa ci portiamo a casa</div>
       <h2 class="reveal">Imparare paga,<br>ma la geometria <span class="ag">resiste</span></h2>
-      <p class="prose reveal">Il passaggio dalle feature progettate a mano a quelle apprese migliora nettamente le prestazioni — ma le feature geometriche restano sorprendentemente competitive ed efficientissime.</p>
+      <p class="prose reveal">Il passaggio dalle feature progettate a mano a quelle apprese migliora nettamente le prestazioni, ma le feature geometriche restano sorprendentemente competitive ed efficientissime.</p>
       <div class="cols c3 reveal" style="margin-top:38px">
         <div class="colcard n"><h3>Rete su keypoint</h3><p>Il <b>miglior compromesso</b> per il tempo reale: un ordine di grandezza più veloce e ~150× più leggera della CNN, con accuratezza vicina.</p></div>
         <div class="colcard c"><h3>CNN</h3><p>La <b>più accurata e robusta</b>: unica indipendente dal rilevatore di mani, al prezzo di più memoria e di una GPU.</p></div>
-        <div class="colcard e"><h3>Euristico</h3><p>Totalmente <b>interpretabile</b> e a costo zero di training, ma fragile e — a sorpresa — il più lento.</p></div>
+        <div class="colcard e"><h3>Euristico</h3><p>Totalmente <b>interpretabile</b> e a costo zero di training, ma fragile e, a sorpresa, il più lento.</p></div>
       </div>
     </section>
 
@@ -993,6 +1131,21 @@ body.editing .edit-banner{ display:block; }
       </div>
     </section>
 
+    <!-- ============ 31b · BIBLIOGRAFIA ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> RIFERIMENTI</span><span>Bibliografia</span></div>
+      <div class="kicker reveal">Fonti e strumenti</div>
+      <h2 class="reveal">Bibliografia</h2>
+      <ol class="reveal" style="margin-top:34px;max-width:1620px;list-style:decimal;padding-left:44px;color:var(--fog);font-size:25px;line-height:1.5">
+        <li style="margin-bottom:20px">G. Sung, K. Sokal, E. Uboweja, et al. <b>«On-device Real-time Hand Gesture Recognition»</b>. Google Research, arXiv:2111.00038, 2021.</li>
+        <li style="margin-bottom:20px">F. Zhang, V. Bazarevsky, A. Vakunov, et al. <b>«MediaPipe Hands: On-device Real-time Hand Tracking»</b>. arXiv:2006.10214, 2020.</li>
+        <li style="margin-bottom:20px">A. Kapitanov, K. Kvanchiani, A. Makhlyarchuk, et al. <b>«HaGRID, HAnd Gesture Recognition Image Dataset»</b>. arXiv:2206.08219, 2022. <span style="font-family:var(--font-mono);font-size:21px;color:var(--blue)">github.com/hukenovs/hagrid</span></li>
+        <li style="margin-bottom:20px">A. Howard, M. Sandler, G. Chu, et al. <b>«Searching for MobileNetV3»</b>. ICCV, 2019. arXiv:1905.02244.</li>
+        <li style="margin-bottom:20px">A. Paszke, S. Gross, F. Massa, et al. <b>«PyTorch: An Imperative Style, High-Performance Deep Learning Library»</b>. NeurIPS, 2019.</li>
+        <li style="margin-bottom:20px">Q. McNemar, «Psychometrika», 1947 · W. G. Cochran, «Biometrika», 1950, test statistici per dati appaiati.</li>
+      </ol>
+    </section>
+
     <!-- ============ 32 · GRAZIE ============ -->
     <section class="slide closing">
       <div class="ctag reveal">Hand Gesture Recognition</div>
@@ -1006,7 +1159,6 @@ body.editing .edit-banner{ display:block; }
 <!-- ============ DECK CHROME ============ -->
 <div class="progress" id="progress"></div>
 <div class="pagecount" id="pagecount"><b>01</b> / 33</div>
-<div class="hint">← → · Spazio · scroll · E = modifica</div>
 <div class="edit-hotzone"></div>
 <button class="edit-toggle" id="editToggle" title="Modalità modifica (E)">✏️</button>
 <div class="edit-banner">Modalità modifica — clicca un testo · Ctrl+S salva · E esci</div>

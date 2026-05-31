@@ -45,7 +45,7 @@ def plot_training_history(history, save_path=None):
 
     ax2.plot(epoche, loss, 'b-', label='Training Loss', linewidth=2)
     ax2.plot(epoche, val_loss, 'r-', label='Validation Loss', linewidth=2)
-    ax2.set_title('Andamento Loss (Errore)', fontsize=14)
+    ax2.set_title('Andamento Loss', fontsize=14)
     ax2.set_xlabel('Epoche')
     ax2.set_ylabel('Loss')
     ax2.legend()
@@ -72,8 +72,8 @@ def plot_confusion_matrix(cm, class_names, save_path=None):
                 xticklabels=class_names, yticklabels=class_names,
                 cbar_kws={'label': 'Numero di predizioni'})
     plt.title('Matrice di Confusione', fontsize=16)
-    plt.ylabel('Classe Reale (Ground Truth)', fontsize=12, fontweight='bold')
-    plt.xlabel('Classe Predetta (Dal Modello)', fontsize=12, fontweight='bold')
+    plt.ylabel('Classe Reale', fontsize=12, fontweight='bold')
+    plt.xlabel('Classe Predetta', fontsize=12, fontweight='bold')
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
     plt.tight_layout()

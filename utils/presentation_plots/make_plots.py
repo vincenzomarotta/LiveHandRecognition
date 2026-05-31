@@ -1,6 +1,6 @@
 """
-Genera i grafici mancanti per la presentazione PPT.
-Legge i CSV di risultati reali e salva i PNG in utils/presentation_plots/.
+Genera i grafici della presentazione leggendo i CSV di risultati reali.
+Salva i PNG direttamente in assets/ con i nomi usati da index.html.
 
 Run:  python -m utils.presentation_plots.make_plots
   (oppure)  python utils/presentation_plots/make_plots.py
@@ -17,7 +17,7 @@ import numpy as np
 # ---------------------------------------------------------------------------
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-OUT = HERE
+OUT = os.path.join(ROOT, "assets")           # salva direttamente negli asset del deck
 
 CNN_CSV = os.path.join(ROOT, "cnn_model", "metrics_summary_cnn.csv")
 NN_CSV = os.path.join(ROOT, "nn_model", "metrics_summary_nn.csv")
@@ -35,9 +35,15 @@ C_NN = "#3D9970"     # verde
 C_CNN = "#2C6FBB"    # blu
 COLORS = {"Euristico": C_HEUR, "NN": C_NN, "CNN": C_CNN}
 
+# Font più grandi: i grafici si vedono più ingranditi nel deck
 plt.rcParams.update({
-    "figure.dpi": 130,
-    "font.size": 12,
+    "figure.dpi": 150,
+    "font.size": 16,
+    "axes.titlesize": 20,
+    "axes.labelsize": 17,
+    "xtick.labelsize": 15,
+    "ytick.labelsize": 15,
+    "legend.fontsize": 15,
     "axes.grid": True,
     "grid.alpha": 0.25,
     "axes.axisbelow": True,
@@ -120,56 +126,56 @@ mcn_data = [
 # PLOT 1 - Accuratezza complessiva
 # ---------------------------------------------------------------------------
 def plot_accuracy():
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(11, 6.5))
     names = ["Euristico", "NN", "CNN"]
     vals = [acc_heur, acc_nn, acc_cnn]
     bars = ax.bar(names, vals, color=[COLORS[n] for n in names], width=0.6, edgecolor="white")
     for bar, v in zip(bars, vals):
         ax.text(bar.get_x() + bar.get_width() / 2, v + 1.2, f"{v:.2f}%",
-                ha="center", va="bottom", fontsize=14, fontweight="bold")
+                ha="center", va="bottom", fontsize=18, fontweight="bold")
     ax.set_ylim(0, 105)
-    ax.set_ylabel("Accuratezza (%)")
-    ax.set_title("Accuratezza complessiva — confronto leale\n(stessi campioni, mano rilevata da MediaPipe)")
+    ax.set_ylabel("Accuratezza %")
+    ax.set_title("Accuratezza complessiva, confronto leale")
     ax.axhline(100 / 15, ls="--", color="gray", lw=1)
-    ax.text(2.45, 100 / 15 + 1, "chance (1/15)", color="gray", fontsize=9, ha="right")
+    ax.text(2.45, 100 / 15 + 1, "soglia caso 1/15", color="gray", fontsize=12, ha="right")
     fig.tight_layout()
-    p = os.path.join(OUT, "01_accuracy_comparison.png")
+    p = os.path.join(OUT, "01_accuracy.png")
     fig.savefig(p, bbox_inches="tight"); plt.close(fig); return p
 
 
 def plot_per_class_f1():
-    fig, ax = plt.subplots(figsize=(15, 6))
+    fig, ax = plt.subplots(figsize=(18, 7.5))
     x = np.arange(len(GESTURE_NAMES)); w = 0.27
     ax.bar(x - w, [f1_heur.get(c, 0) for c in GESTURE_NAMES], w, label="Euristico", color=C_HEUR)
     ax.bar(x, [f1_nn.get(c, 0) for c in GESTURE_NAMES], w, label="NN", color=C_NN)
     ax.bar(x + w, [f1_cnn.get(c, 0) for c in GESTURE_NAMES], w, label="CNN", color=C_CNN)
     ax.set_xticks(x); ax.set_xticklabels(GESTURE_NAMES, rotation=45, ha="right")
     ax.set_ylabel("F1-score"); ax.set_ylim(0, 1.05)
-    ax.set_title("F1-score per classe — Euristico vs NN vs CNN")
+    ax.set_title("F1-score per classe, Euristico vs NN vs CNN")
     ax.legend(loc="lower right")
     fig.tight_layout()
-    p = os.path.join(OUT, "02_per_class_f1.png")
+    p = os.path.join(OUT, "02_f1.png")
     fig.savefig(p, bbox_inches="tight"); plt.close(fig); return p
 
 
 def plot_mcnemar():
-    fig, ax = plt.subplots(figsize=(9, 5.5))
+    fig, ax = plt.subplots(figsize=(12, 7))
     x = np.arange(len(mcn_data)); w = 0.35
     b_vals = [d[2][0] for d in mcn_data]
     c_vals = [d[2][1] for d in mcn_data]
-    ax.bar(x - w / 2, b_vals, w, label="solo il 1° modello corretto (b)", color="#2C6FBB")
-    ax.bar(x + w / 2, c_vals, w, label="solo il 2° modello corretto (c)", color="#E07A5F")
+    ax.bar(x - w / 2, b_vals, w, label="solo il 1° modello corretto", color="#2C6FBB")
+    ax.bar(x + w / 2, c_vals, w, label="solo il 2° modello corretto", color="#E07A5F")
     ymax = max(max(b_vals), max(c_vals))
     for i, (a, bn, (b, c, p)) in enumerate(mcn_data):
-        ax.text(x[i] - w / 2, b + ymax * 0.01, str(b), ha="center", fontsize=10, fontweight="bold")
-        ax.text(x[i] + w / 2, c + ymax * 0.01, str(c), ha="center", fontsize=10, fontweight="bold")
+        ax.text(x[i] - w / 2, b + ymax * 0.01, str(b), ha="center", fontsize=13, fontweight="bold")
+        ax.text(x[i] + w / 2, c + ymax * 0.01, str(c), ha="center", fontsize=13, fontweight="bold")
         ax.text(x[i], max(b, c) + ymax * 0.09, f"p < 1e-10\n→ vince {a if b > c else bn}",
-                ha="center", fontsize=10, color="#333", fontweight="bold")
+                ha="center", fontsize=13, color="#333", fontweight="bold")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{a}\nvs\n{bn}" for a, bn, _ in mcn_data])
-    ax.set_ylabel("# campioni in disaccordo")
+    ax.set_ylabel("Campioni in disaccordo")
     ax.set_ylim(0, ymax * 1.35)
-    ax.set_title("Test di McNemar — disaccordi appaiati e significatività\n(continuity correction, su mani rilevate)")
+    ax.set_title("Test di McNemar, disaccordi appaiati e significatività")
     ax.legend(loc="upper right")
     fig.tight_layout()
     p = os.path.join(OUT, "03_mcnemar.png")
@@ -177,23 +183,23 @@ def plot_mcnemar():
 
 
 def plot_efficiency():
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6.5))
     names = ["Euristico", "NN", "CNN"]; cols = [COLORS[n] for n in names]
     lat = [lat_heur, lat_nn, lat_cnn]
     b1 = ax1.bar(names, lat, color=cols, width=0.6)
     for bar, v in zip(b1, lat):
         ax1.text(bar.get_x() + bar.get_width() / 2, v + max(lat) * 0.02, f"{v:.2f} ms",
-                 ha="center", fontsize=12, fontweight="bold")
-    ax1.set_ylabel("Latenza media (ms, batch=1)")
-    ax1.set_title("Analisi temporale — latenza di inferenza\n(NVIDIA RTX 4050)")
+                 ha="center", fontsize=15, fontweight="bold")
+    ax1.set_ylabel("Latenza media in ms")
+    ax1.set_title("Analisi temporale, latenza di inferenza")
     ax1.set_ylim(0, max(lat) * 1.25)
     size = [size_heur, size_nn, size_cnn]
     b2 = ax2.bar(names, size, color=cols, width=0.6)
     for bar, v in zip(b2, size):
         ax2.text(bar.get_x() + bar.get_width() / 2, v + max(size) * 0.02, f"{v:.2f} MB",
-                 ha="center", fontsize=12, fontweight="bold")
-    ax2.set_ylabel("Peso modello su disco (MB)")
-    ax2.set_title("Analisi spaziale — footprint di memoria")
+                 ha="center", fontsize=15, fontweight="bold")
+    ax2.set_ylabel("Peso modello su disco in MB")
+    ax2.set_title("Analisi spaziale, footprint di memoria")
     ax2.set_ylim(0, max(size) * 1.25)
     fig.tight_layout()
     p = os.path.join(OUT, "04_efficiency.png")
@@ -201,24 +207,24 @@ def plot_efficiency():
 
 
 def plot_tradeoff():
-    fig, ax = plt.subplots(figsize=(9, 6))
+    fig, ax = plt.subplots(figsize=(12, 7.5))
     names = ["Euristico", "NN", "CNN"]
     lat = [lat_heur, lat_nn, lat_cnn]; acc = [acc_heur, acc_nn, acc_cnn]
     size = [size_heur, size_nn, size_cnn]
-    areas = [400 + s * 600 for s in size]
+    areas = [600 + s * 900 for s in size]
     for n, xx, yy, a in zip(names, lat, acc, areas):
         ax.scatter(xx, yy, s=a, color=COLORS[n], alpha=0.75, edgecolor="black", zorder=3)
         ax.annotate(n, (xx, yy), textcoords="offset points", xytext=(12, 10),
-                    fontsize=13, fontweight="bold")
+                    fontsize=16, fontweight="bold")
     ax.set_xscale("log")
-    ax.set_xlabel("Latenza media (ms, scala log) — più a sinistra = più veloce")
-    ax.set_ylabel("Accuratezza (%)")
-    ax.set_title("Trade-off accuratezza vs velocità\n(area bolla ∝ peso del modello)")
+    ax.set_xlabel("Latenza media in ms, scala logaritmica · più a sinistra = più veloce")
+    ax.set_ylabel("Accuratezza %")
+    ax.set_title("Trade-off accuratezza vs velocità")
     ax.set_ylim(50, 100)
     ax.text(0.99, 0.02, "NN: miglior trade-off real-time/edge",
-            transform=ax.transAxes, ha="right", fontsize=10, color="#3D9970", fontstyle="italic")
+            transform=ax.transAxes, ha="right", fontsize=14, color="#3D9970", fontstyle="italic")
     fig.tight_layout()
-    p = os.path.join(OUT, "05_tradeoff_scatter.png")
+    p = os.path.join(OUT, "05_tradeoff.png")
     fig.savefig(p, bbox_inches="tight"); plt.close(fig); return p
 
 
