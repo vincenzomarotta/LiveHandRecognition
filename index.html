@@ -318,6 +318,10 @@ ul.points li.reveal{ opacity:0; transform:translateX(-24px); }
 .edit-toggle.show,.edit-toggle.active{ opacity:1; pointer-events:auto; }
 .edit-toggle.active{ background:var(--blue); color:#06101c; border-color:var(--blue); }
 body.editing [contenteditable]{ outline:2px dashed rgba(76,155,240,.6); outline-offset:4px; border-radius:4px; }
+/* edit-mode: ridimensiona i blocchi (la dimensione finisce in style inline → salvata con Ctrl+S) */
+body.editing .rsz{ resize:both; overflow:hidden; outline:1px dashed rgba(70,197,138,.6); outline-offset:3px; }
+body.editing svg.rsz,body.editing img.rsz{ display:inline-block; }
+body.editing .rsz::-webkit-resizer{ background:var(--green); }
 .edit-banner{ position:fixed; top:18px; left:50%; transform:translateX(-50%); z-index:10001;
   font-family:var(--font-mono); font-size:17px; background:var(--blue); color:#06101c;
   padding:8px 18px; border-radius:30px; display:none; }
@@ -876,16 +880,33 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Le differenze nei risultati</span></div>
       <div class="kicker reveal">Numeri vicini, ma non confrontabili 1:1</div>
       <h2 class="reveal" style="font-size:62px">Risultati: paper vs miei</h2>
-      <table class="summary reveal" style="margin-top:24px">
+      <table class="summary reveal" style="margin-top:22px">
         <thead><tr><th class="lbl"></th><th class="e">Euristico</th><th class="n">Rete su keypoint</th><th class="c">CNN</th></tr></thead>
         <tbody>
           <tr><td>Paper — recall</td><td>44.4% <small>@ 0.86% FPR · 6 gesti</small></td><td>87.9% <small>@ 1% FPR · 6 gesti</small></td><td>— <small>assente nel paper</small></td></tr>
+          <tr><td>Mio — recall @ 1% FPR</td><td>58.2% <small>@ 62.8% FPR reale</small></td><td>90.9%</td><td class="win">97.2%</td></tr>
           <tr><td>Mio — recall (macro)</td><td>55.3%</td><td>90.4%</td><td class="win">91.9%</td></tr>
           <tr><td>Mia — F1 (macro)</td><td>0.507</td><td>0.909</td><td class="win">0.920</td></tr>
         </tbody>
       </table>
-      <div class="note reveal" style="position:relative;bottom:auto;margin-top:28px;border-left:6px solid var(--terra)">
-        <p><span class="ntitle" style="color:var(--terra)">Attenzione al confronto</span>I numeri <b>non sono direttamente comparabili</b>: dataset diversi (HaGRID pubblico vs in-house), <b>15 gesti contro 6</b>, e il paper riporta il recall a un <b>punto di lavoro</b> fissato sul falso-positivo (FPR), mentre io riporto la media macro sul test. La lettura corretta è qualitativa: <span class="em" style="color:var(--terra)">stesse logiche, ordini di grandezza coerenti</span> — e la CNN che ho aggiunto supera entrambi i classificatori storici del paper.</p>
+      <div class="note reveal" style="position:relative;bottom:auto;margin-top:24px;border-left:6px solid var(--terra)">
+        <p><span class="ntitle" style="color:var(--terra)">Attenzione al confronto</span>Sulla <b>stessa metrica del paper</b> (recall @ 1% FPR) la mia rete tiene il passo: <b>90.9% vs 87.9%</b>. L'euristico però non raggiunge l'1% di FPR — sul sottoinsieme con mano rilevata i campioni NO GESTURE (i negativi) sono pochi, quindi spara un gesto troppo spesso e il suo FPR reale schizza al <b>62.8%</b>: il suo punto di lavoro non è comparabile con lo 0.86% del paper. Restano comunque dataset e numero di gesti diversi (<b>15 vs 6</b>): lettura qualitativa, <span class="em" style="color:var(--terra)">stesse logiche, ordini di grandezza coerenti</span> — e la CNN che ho aggiunto le supera entrambe.</p>
+      </div>
+    </section>
+
+    <!-- ============ 25f · PERCHÉ I MIEI NUMERI SONO PIÙ ALTI ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Perché i miei numeri sono più alti</span></div>
+      <div class="kicker reveal">Non un modello migliore, un benchmark più benevolo</div>
+      <h2 class="reveal" style="font-size:64px">Da dove viene il divario</h2>
+      <ul class="points" style="margin-top:30px">
+        <li class="b1 reveal"><b>Negativi molto più duri nel paper.</b> Loro raccolgono <b>hard-negative</b> in-the-wild (6478 utenti): pose "quasi-gesto" da non confondere. Io ho <b>654 NO GESTURE</b> curati e facili.<small>Con negativi facili, fissare l'1% di FPR non costa quasi nulla → recall alto.</small></li>
+        <li class="b2 reveal"><b>Dataset più pulito.</b> HaGRID è centrato sulla mano e ben illuminato; il paper testa su video reali con occlusioni, sfondi e angoli estremi.</li>
+        <li class="b3 reveal"><b>Stessa distribuzione train/test.</b> I miei train e test vengono dallo stesso HaGRID (split 80/10/10) → stima <b>ottimistica</b>. Il paper valuta su un test set separato e più vario.</li>
+        <li class="b3 reveal"><b>La metrica @1% FPR amplifica il divario.</b> È proprio il punto in cui i negativi duri del paper mordono di più.</li>
+      </ul>
+      <div class="note reveal" style="bottom:46px">
+        <p><span class="ntitle">In sintesi</span>I miei valori più alti riflettono un <b>benchmark più benevolo</b> (negativi pochi e facili, split sulla stessa distribuzione), <span class="em">non necessariamente un modello superiore</span>. È il motivo per cui il confronto resta <b>qualitativo</b>: stesse logiche, ordini di grandezza coerenti.</p>
       </div>
     </section>
 
@@ -1026,12 +1047,18 @@ class SlidePresentation{
 class InlineEditor{
   constructor(){ this.isActive=false;
     this.targets='h1,h2,h3,p,li,figcaption,td,th,.kicker,.t-sub,.t-tag,.caption,.dnum,.dsub,.plabel,.cite,.tagline,.exnote';
+    this.rszTargets='.card,.colcard,.ph,svg,img,table,.note,.stat,.imgwrap,.cardrow figure';
     this.toggle=document.getElementById('editToggle'); this.wireUI();
     addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&this.isActive){e.preventDefault();this.save();} }); }
   toggleEditMode(){ this.isActive=!this.isActive;
     document.body.classList.toggle('editing',this.isActive); this.toggle.classList.toggle('active',this.isActive);
-    document.querySelectorAll(this.targets).forEach(el=>{ this.isActive?el.setAttribute('contenteditable','true'):el.removeAttribute('contenteditable'); }); }
-  save(){ const html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+    document.querySelectorAll(this.targets).forEach(el=>{ this.isActive?el.setAttribute('contenteditable','true'):el.removeAttribute('contenteditable'); });
+    document.querySelectorAll(this.rszTargets).forEach(el=>{ el.classList.toggle('rsz',this.isActive); }); }
+  save(){ const clone=document.documentElement.cloneNode(true);
+    clone.querySelectorAll('[contenteditable]').forEach(e=>e.removeAttribute('contenteditable'));
+    clone.querySelectorAll('.rsz').forEach(e=>e.classList.remove('rsz'));
+    const b=clone.querySelector('body'); if(b)b.classList.remove('editing');
+    const html='<!DOCTYPE html>\n'+clone.outerHTML;
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
     a.download='Hand_Gesture_Recognition.html'; a.click(); URL.revokeObjectURL(a.href); }
   wireUI(){ const hot=document.querySelector('.edit-hotzone'),btn=this.toggle; let t=null;

@@ -58,16 +58,32 @@ if __name__ == '__main__':
     frame_width  = 600
     frame_height = 600
 
-    heuristic_classifier = heuristic_model.HeuristicClassifier((frame_width, frame_height))
-    nn_classifier = nn_model.GestureClassifierNN()
-    nn_classifier.load("./nn_model/gesture_nn_model.pth")
+    # Carica SOLO i pesi del modello attivo (gli altri non servono).
+    heuristic_classifier = None
+    nn_classifier        = None
+    cnn_classifier       = None
+    cnn_to_true_label    = None
 
-    cnn_classifier = GestureClassifierCNN(num_classes=len(GESTURE))
-    cnn_classifier.model.load_state_dict(
-        torch.load(os.path.join(PROJECT_ROOT, "cnn_model", "gesture_cnn_finetuned.pth"),
-                   map_location=cnn_classifier.device))
-    cnn_classifier.model.eval()
-    cnn_to_true_label = build_cnn_label_map(TEST_DIR)
+    if model_type == HEURISTIC:
+        heuristic_classifier = heuristic_model.HeuristicClassifier((frame_width, frame_height))
+    elif model_type == NN:
+        nn_classifier = nn_model.GestureClassifierNN()
+        nn_classifier.load("./nn_model/gesture_nn_model.pth")
+    elif model_type == CNN:
+        cnn_classifier = GestureClassifierCNN(num_classes=len(GESTURE))
+        cnn_classifier.model.load_state_dict(
+            torch.load(os.path.join(PROJECT_ROOT, "cnn_model", "gesture_cnn_finetuned.pth"),
+                       map_location=cnn_classifier.device))
+        cnn_classifier.model.eval()
+        cnn_to_true_label = build_cnn_label_map(TEST_DIR)
+
+    # Etichetta modello (nome, colore BGR) — colori coerenti con la presentazione
+    MODEL_LABEL = {
+        HEURISTIC: ("HEURISTIC", (111, 149, 242)),  # terra  #F2956F
+        NN:        ("NN",        (138, 197,  70)),  # verde  #46C58A
+        CNN:       ("CNN",       (240, 155,  76)),  # blu    #4C9BF0
+    }
+    model_name, model_color = MODEL_LABEL[model_type]
 
     mp_hands         = mp.solutions.hands
     mp_drawing       = mp.solutions.drawing_utils
@@ -167,10 +183,10 @@ if __name__ == '__main__':
                         (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                         0.8, (0, 255, 0), 2)
 
-            if model_type == CNN:
-                cv2.putText(frame, f"CNN: {GESTURE[gesture_code]}",
-                            (10, 60), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.8, (0, 255, 255), 2)
+            # Nome del modello attivo, a sinistra, nel colore della presentazione
+            cv2.putText(frame, model_name,
+                        (10, 60), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8, model_color, 2)
 
             # ── Mostra il frame SEMPRE, anche senza mani rilevate ─────────────
             cv2.imshow('Hand Gesture Recognition', frame)
