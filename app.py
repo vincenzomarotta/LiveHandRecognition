@@ -1,9 +1,15 @@
 import mediapipe as mp
 import time
+import os
+
+import torch
+from PIL import Image
+from torchvision import transforms
 
 from heuristic_model import heuristic_model
 from utils.utility import *
 import nn_model.nn_model as nn_model
+from cnn_model.cnn_model import GestureClassifierCNN
 
 GESTURE = [
     'CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK',
@@ -11,7 +17,30 @@ GESTURE = [
     'THREE', 'TWO', 'NO GESTURE'
 ]
 HEURISTIC = 0
-NN = 1
+NN        = 1
+CNN       = 2
+
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+TEST_DIR     = os.path.join(PROJECT_ROOT, 'dataset', 'hagrid_dataset_split', 'test')
+
+# CNN transform: identica a quella di valutazione (cnn_model.py / test_head_to_head.py)
+cnn_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+
+def build_cnn_label_map(test_dir):
+    """ImageFolder ordina le cartelle alfabeticamente: l'indice grezzo della CNN
+    non coincide con la classe reale. Ricostruisce indice_CNN -> label_reale
+    leggendo i nomi cartella '{label}_{gesture}'. Fallback identita' se assente."""
+    if not os.path.isdir(test_dir):
+        print(f"[WARN] {test_dir} non trovato: uso mappa identita' per la CNN.")
+        return {i: i for i in range(len(GESTURE))}
+    folders = sorted([d for d in os.listdir(test_dir)
+                      if os.path.isdir(os.path.join(test_dir, d))])
+    return {cnn_idx: int(name.split('_')[0]) for cnn_idx, name in enumerate(folders)}
 
 
 def open_camera(index=0):
@@ -32,6 +61,13 @@ if __name__ == '__main__':
     heuristic_classifier = heuristic_model.HeuristicClassifier((frame_width, frame_height))
     nn_classifier = nn_model.GestureClassifierNN()
     nn_classifier.load("./nn_model/gesture_nn_model.pth")
+
+    cnn_classifier = GestureClassifierCNN(num_classes=len(GESTURE))
+    cnn_classifier.model.load_state_dict(
+        torch.load(os.path.join(PROJECT_ROOT, "cnn_model", "gesture_cnn_finetuned.pth"),
+                   map_location=cnn_classifier.device))
+    cnn_classifier.model.eval()
+    cnn_to_true_label = build_cnn_label_map(TEST_DIR)
 
     mp_hands         = mp.solutions.hands
     mp_drawing       = mp.solutions.drawing_utils
@@ -78,6 +114,14 @@ if __name__ == '__main__':
 
             gesture_code = 14  # default: NO GESTURE
 
+            # CNN: predice sull'intero frame, non serve MediaPipe
+            if model_type == CNN:
+                pil = Image.fromarray(rgb)
+                tensor = cnn_transform(pil).unsqueeze(0).to(cnn_classifier.device)
+                with torch.no_grad(), torch.amp.autocast('cuda', enabled=torch.cuda.is_available()):
+                    raw_idx = cnn_classifier.model(tensor).argmax(1).item()
+                gesture_code = cnn_to_true_label[raw_idx]
+
             if results.multi_hand_landmarks:
                 for hand_landmarks, handedness in zip(
                         results.multi_hand_landmarks,
@@ -122,6 +166,11 @@ if __name__ == '__main__':
             cv2.putText(frame, f"FPS: {fps_display:.1f}",
                         (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                         0.8, (0, 255, 0), 2)
+
+            if model_type == CNN:
+                cv2.putText(frame, f"CNN: {GESTURE[gesture_code]}",
+                            (10, 60), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.8, (0, 255, 255), 2)
 
             # ── Mostra il frame SEMPRE, anche senza mani rilevate ─────────────
             cv2.imshow('Hand Gesture Recognition', frame)
