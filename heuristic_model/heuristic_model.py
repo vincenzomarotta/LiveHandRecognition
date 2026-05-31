@@ -75,6 +75,7 @@ class HeuristicClassifier:
         return transformed_3d
 
     def process(self, landmarks):
+        landmarks  = np.array(landmarks, dtype=np.float64)
         hand_img   = np.ones((self.frame_width, self.frame_height)) * 255
         hand_img   = draw_hand(hand_img, landmarks)
         state      = np.ones(5) * -1

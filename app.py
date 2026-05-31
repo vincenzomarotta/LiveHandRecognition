@@ -54,7 +54,7 @@ def open_camera(index=0):
 
 
 if __name__ == '__main__':
-    model_type   = NN
+    model_type   = HEURISTIC
     frame_width  = 600
     frame_height = 600
 
