@@ -368,7 +368,7 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Definizione del problema</span></div>
       <div class="kicker reveal">15 gesti statici della mano</div>
       <h2 class="reveal">Una posa → un'etichetta</h2>
-      <p class="prose tight reveal">Dato un fotogramma con una mano, il sistema deve assegnarlo a una di <b>15 classi</b> — saluti, conteggi, simboli — più la classe <b>NO GESTURE</b>. Il vincolo che guida ogni scelta progettuale è uno solo: <span class="hl">funzionare in tempo reale</span> sul flusso di una webcam.</p>
+      <p class="prose tight reveal">Dato un fotogramma con una mano, il sistema deve assegnarlo a una di <b>15 classi</b> (saluti, conteggi, simboli) più la classe <b>NO GESTURE</b>. Il vincolo che guida ogni scelta progettuale è uno solo: <span class="hl">funzionare in tempo reale</span> sul flusso di una webcam.</p>
       <div class="cols c3 reveal" style="margin-top:34px">
         <div class="ph" style="height:300px"><div class="picon">🖐️</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_1.png</div></div>
         <div class="ph" style="height:300px"><div class="picon">✌️</div><div class="plabel">esempi gesti dal dataset</div><div class="ppath">assets/sample_gesti_2.png</div></div>
@@ -387,7 +387,7 @@ body.editing .edit-banner{ display:block; }
           <div class="gcat e">Conteggi & dita</div>
           <ul class="glist">
             <li><span class="ge">☝️</span><span><b>POINTING UP</b> — <span class="gd">solo l'indice alzato</span></span></li>
-            <li><span class="ge">✌︎</span><span><b>TWO</b> — <span class="gd">indice e medio uniti</span></span></li>
+            <li><span class="ge">✌️</span><span><b>TWO</b> — <span class="gd">indice e medio uniti</span></span></li>
             <li><span class="ge">🤟</span><span><b>THREE</b> — <span class="gd">indice, medio e anulare</span></span></li>
             <li><span class="ge">🖖</span><span><b>FOUR</b> — <span class="gd">quattro dita, pollice giù</span></span></li>
             <li><span class="ge">✌️</span><span><b>VICTORY</b> — <span class="gd">indice e medio divaricati</span></span></li>
@@ -471,8 +471,8 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>La pipeline completa</span></div>
       <div class="kicker reveal">Due strade, un confronto</div>
       <h2 class="reveal">Dal dataset ai tre classificatori</h2>
-      <div class="imgwrap reveal"><div class="card"><img src="assets/00_pipeline.png" alt="Pipeline" style="width:1120px"></div></div>
-      <p class="caption reveal">Euristico e rete su keypoint condividono lo stesso input geometrico; la CNN lavora sui pixel, su un ramo del tutto indipendente.</p>
+      <div class="imgwrap reveal"><div class="card"><img src="assets/00_pipeline.png" alt="Pipeline" style="width:1800px"></div></div>
+      <p class="caption reveal">Euristico e rete su keypoint condividono lo stesso input geometrico. <br> La CNN lavora sui pixel, su un ramo del tutto indipendente.</p>
     </section>
 
     <!-- ============ 7 · DIVIDER 2 ============ -->
@@ -535,7 +535,7 @@ body.editing .edit-banner{ display:block; }
         <tbody>
           <tr><td>FIST ✊</td><td><span class="sig"><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>tutte e cinque le dita piegate</td></tr>
           <tr><td>POINTING UP ☝️</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i><i class="p">●</i></span></td><td>solo l'indice disteso</td></tr>
-          <tr><td>TWO ✌︎</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i></span></td><td>div. indice↔medio / palmo <b>≤ 0.6</b></td></tr>
+          <tr><td>TWO ✌️︎</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i></span></td><td>div. indice↔medio / palmo <b>≤ 0.6</b></td></tr>
           <tr><td>VICTORY ✌️</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i><i class="p">●</i></span></td><td>div. indice↔medio / palmo <b>&gt; 0.6</b></td></tr>
           <tr><td>THREE 🤟</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="p">●</i></span></td><td>indice + medio + anulare distesi</td></tr>
           <tr><td>FOUR 🖖</td><td><span class="sig"><i class="p">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i><i class="d">●</i></span></td><td>quattro dita distese, pollice piegato</td></tr>
@@ -695,6 +695,24 @@ body.editing .edit-banner{ display:block; }
       <p class="caption reveal">L'euristico crolla su alcuni gesti aperti (mano e stop quasi a zero) ma regge su altri; la <b>CNN</b> è la più equilibrata su tutte le classi.</p>
     </section>
 
+    <!-- ============ 17b · METRICHE MEDIE (PRECISION / RECALL / F1) ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Precision · Recall · F1 medi</span></div>
+      <div class="kicker reveal">Oltre l'accuratezza: la media macro sulle 15 classi</div>
+      <h2 class="reveal" style="font-size:66px">Precision, recall e F1 a confronto</h2>
+      <p class="prose tight reveal" style="font-size:28px">L'accuratezza da sola può ingannare con classi sbilanciate. Le medie <b>macro</b> — stesso peso a ognuna delle 15 classi — dicono quanto ogni rete è <b>equilibrata</b>: la <span class="hl">precision</span> misura quanti gesti predetti sono giusti, il <span class="hlg">recall</span> quanti gesti reali vengono trovati, l'<span class="hlt">F1</span> ne è la media armonica.</p>
+      <table class="summary reveal" style="margin-top:28px">
+        <thead><tr><th class="lbl">Metrica (media macro)</th><th class="e">Euristico</th><th class="n">Rete su keypoint</th><th class="c">CNN</th></tr></thead>
+        <tbody>
+          <tr><td>Precision</td><td>0.560</td><td class="win">0.924</td><td>0.920</td></tr>
+          <tr><td>Recall</td><td>0.553</td><td>0.904</td><td class="win">0.919</td></tr>
+          <tr><td>F1-score</td><td>0.507</td><td>0.909</td><td class="win">0.920</td></tr>
+          <tr><td>Accuratezza</td><td>55.1%</td><td>90.8%</td><td class="win">92.0%</td></tr>
+        </tbody>
+      </table>
+      <p class="caption reveal" style="margin-top:18px;font-size:21px">Medie <b>macro</b> sulle 15 classi, calcolate sul test set completo di ciascuna rete. Per la CNN ciò include anche le immagini dove MediaPipe fallisce (44.207 campioni): l'accuratezza scende così al 92,0%, leggermente sotto il <b>94,67%</b> del confronto diretto sulle sole mani rilevate. L'euristico, che sbaglia in blocco i gesti aperti, perde molto più sulla F1 che sulla sola accuratezza.</p>
+    </section>
+
     <!-- ============ 18 · CURVE TRAINING ============ -->
     <section class="slide">
       <div class="hud reveal"><span><span class="dot">●</span> 03 · PRESTAZIONI</span><span>Curve di addestramento</span></div>
@@ -808,6 +826,66 @@ body.editing .edit-banner{ display:block; }
       </div>
       <div class="note reveal" style="bottom:40px">
         <p>MediaPipe fallisce su immagini degradate (rumore, motion blur). Filtri di smoothing (<b>gaussiano / mediano</b>) come pre-processing potrebbero recuperarle. La CNN è intrinsecamente più robusta perché apprende feature tolleranti al degrado.</p>
+      </div>
+    </section>
+
+    <!-- ============ 25b · DIVIDER · CONFRONTO COL PAPER ============ -->
+    <section class="slide divider">
+      <div class="dghost">doi</div>
+      <div class="dnum reveal">Riproduzione</div>
+      <div class="dbar reveal"></div>
+      <h2 class="reveal">Io e il<br>paper originale</h2>
+      <div class="dsub reveal">Cosa ho ripreso, cosa ho cambiato, e come cambiano i risultati.</div>
+    </section>
+
+    <!-- ============ 25c · IL PAPER · SIMILITUDINI ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Il punto di partenza</span></div>
+      <div class="kicker reveal">Google Research · 2021</div>
+      <h2 class="reveal" style="font-size:58px">«On-device Real-time<br>Hand Gesture Recognition»</h2>
+      <p class="prose tight reveal" style="font-size:28px">Il paper di riferimento propone un sistema HGR <b>on-device</b> da una singola camera RGB: <b>MediaPipe Hands</b> stima i keypoint della mano, poi un classificatore lavora sulla <b>geometria</b>, non sui pixel. Propone <b>due</b> classificatori — uno <span class="hlt">euristico</span> e una piccola <span class="hlg">rete neurale</span>. Da qui sono partito.</p>
+      <div class="cols c3 reveal" style="margin-top:28px">
+        <div class="colcard" style="border-top:4px solid var(--fog3)"><h3>Pipeline a keypoint</h3><p>Stessa idea di fondo: <b>rilevatore di mani → feature geometriche → classificatore</b>, eseguito solo quando una mano è presente.</p></div>
+        <div class="colcard e"><h3>Classificatore euristico</h3><p>Stessa filosofia: stato discreto di ogni dito (disteso / piegato / incrociato) e regole esplicite su angoli e distanze normalizzate.</p></div>
+        <div class="colcard n"><h3>Rete su keypoint</h3><p>Stessa architettura compatta: <b>strati densi da 50 neuroni</b> sulle feature della posa, non sui pixel grezzi.</p></div>
+      </div>
+      <div class="cite reveal" style="margin-top:22px">Sung et al., «On-device Real-time Hand Gesture Recognition», Google Research · arXiv:2111.00038 · 2021</div>
+    </section>
+
+    <!-- ============ 25d · DIFFERENZE METODOLOGICHE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Dove mi sono allontanato</span></div>
+      <div class="kicker reveal">Riproduzione, ma anche estensione</div>
+      <h2 class="reveal">Cosa ho cambiato e aggiunto</h2>
+      <table class="summary reveal" style="margin-top:24px">
+        <thead><tr><th class="lbl"></th><th class="e">Paper (Google 2021)</th><th class="c">Il mio progetto</th></tr></thead>
+        <tbody>
+          <tr><td>Classificatori</td><td>2 — euristico + rete</td><td class="win">3 — + CNN sui pixel</td></tr>
+          <tr><td>Gesti</td><td>6 supportati (21 nel dataset)</td><td>15 + NO GESTURE</td></tr>
+          <tr><td>Dataset</td><td>in-house privato</td><td><b>HaGRID</b> pubblico</td></tr>
+          <tr><td>Feature della rete</td><td>3D world-metric (intrinseche + estrinseche)</td><td>landmark 2D rel. al polso + 10 angoli</td></tr>
+          <tr><td>Loss della rete</td><td>focal loss (classi sbilanciate)</td><td>cross-entropy</td></tr>
+          <tr><td>Hand tracker</td><td>MediaPipe migliorato (ASL, 3D metrico)</td><td>MediaPipe standard, non ri-allenato</td></tr>
+        </tbody>
+      </table>
+      <p class="caption reveal" style="margin-top:16px;font-size:22px">La differenza concettuale più grande: il paper resta <b>volutamente keypoint-only</b>; io aggiungo un terzo ramo che impara <b>dai pixel grezzi</b> (CNN), per misurare quanto si guadagna abbandonando le feature progettate a mano.</p>
+    </section>
+
+    <!-- ============ 25e · DIFFERENZE NEI RISULTATI ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> PAPER · RIPRODUZIONE</span><span>Le differenze nei risultati</span></div>
+      <div class="kicker reveal">Numeri vicini, ma non confrontabili 1:1</div>
+      <h2 class="reveal" style="font-size:62px">Risultati: paper vs miei</h2>
+      <table class="summary reveal" style="margin-top:24px">
+        <thead><tr><th class="lbl"></th><th class="e">Euristico</th><th class="n">Rete su keypoint</th><th class="c">CNN</th></tr></thead>
+        <tbody>
+          <tr><td>Paper — recall</td><td>44.4% <small>@ 0.86% FPR · 6 gesti</small></td><td>87.9% <small>@ 1% FPR · 6 gesti</small></td><td>— <small>assente nel paper</small></td></tr>
+          <tr><td>Mio — recall (macro)</td><td>55.3%</td><td>90.4%</td><td class="win">91.9%</td></tr>
+          <tr><td>Mia — F1 (macro)</td><td>0.507</td><td>0.909</td><td class="win">0.920</td></tr>
+        </tbody>
+      </table>
+      <div class="note reveal" style="position:relative;bottom:auto;margin-top:28px;border-left:6px solid var(--terra)">
+        <p><span class="ntitle" style="color:var(--terra)">Attenzione al confronto</span>I numeri <b>non sono direttamente comparabili</b>: dataset diversi (HaGRID pubblico vs in-house), <b>15 gesti contro 6</b>, e il paper riporta il recall a un <b>punto di lavoro</b> fissato sul falso-positivo (FPR), mentre io riporto la media macro sul test. La lettura corretta è qualitativa: <span class="em" style="color:var(--terra)">stesse logiche, ordini di grandezza coerenti</span> — e la CNN che ho aggiunto supera entrambi i classificatori storici del paper.</p>
       </div>
     </section>
 
