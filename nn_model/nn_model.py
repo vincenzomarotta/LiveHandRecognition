@@ -35,7 +35,7 @@ class GestureNN(nn.Module):
             nn.ReLU(),
             nn.Linear(50, 50),
             nn.ReLU(),
-            nn.Linear(50, num_classes)  # Niente Softmax qui, gestito da CrossEntropyLoss
+            nn.Linear(50, num_classes)
         )
 
     def forward(self, x):
@@ -123,7 +123,7 @@ class GestureClassifierNN:
             print(
                 f"Epoca [{epoch + 1}/{epochs}] | Loss: {epoch_loss:.4f} | Acc: {epoch_acc:.4f} | Val Loss: {epoch_val_loss:.4f} | Val Acc: {epoch_val_acc:.4f}")
 
-            # --- LOGICA EARLY STOPPING ---
+            # --- EARLY STOPPING ---
             if epoch_val_loss < best_val_loss:
                 best_val_loss = epoch_val_loss
                 epochs_no_improve = 0
@@ -151,39 +151,6 @@ class GestureClassifierNN:
         history_obj = MockHistory()
         history_obj.history = self.history_dict
         return history_obj
-
-    # def evaluate_model(self, X_test, y_test):
-    #     """Valuta il modello sul test set misurando i tempi di inferenza."""
-    #     print("--- Avvio Valutazione ---")
-    #
-    #     # Sposta i dati sulla GPU/CPU corretta
-    #     X_test_t = torch.tensor(X_test, dtype=torch.float32).to(self.device)
-    #     self.model.eval()
-    #
-    #     start_inf_time = time.time()
-    #     with torch.no_grad():
-    #         outputs = self.model(X_test_t)
-    #     end_inf_time = time.time()
-    #
-    #     total_inf_time_ms = (end_inf_time - start_inf_time) * 1000
-    #     avg_inf_time_ms = total_inf_time_ms / len(X_test)
-    #
-    #     # Le probabilità maggiori (argmax)
-    #     _, y_pred_t = torch.max(outputs, 1)
-    #     y_pred = y_pred_t.cpu().numpy()  # Riporta i dati sulla CPU per sklearn
-    #
-    #     report = classification_report(y_test, y_pred, zero_division=0)
-    #     cm = confusion_matrix(y_test, y_pred)
-    #
-    #     print(f"Tempo di inferenza medio: {avg_inf_time_ms:.4f} ms per frame")
-    #     print("\nReport di Classificazione (Include Recall per ogni classe):\n", report)
-    #
-    #     return {
-    #         "average_inference_time_ms": avg_inf_time_ms,
-    #         "classification_report": report,
-    #         "confusion_matrix": cm,
-    #         "predictions": y_pred
-    #     }
 
     def evaluate_model(self, X_test, y_test,
                        output_csv="test_results_nn.csv",

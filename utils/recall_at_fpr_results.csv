@@ -1,8 +1,0 @@
-modello,target_fpr,recall_medio
-Euristico,62.84% (reale),58.22%
-NN,1.00%,90.85%
-CNN,1.00%,97.22%
-NN,0.50%,89.97%
-CNN,0.50%,95.45%
-NN,2.00%,91.59%
-CNN,2.00%,98.46%

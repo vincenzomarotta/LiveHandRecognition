@@ -43,9 +43,6 @@ class HandGestureFineTune(nn.Module):
         weights = MobileNet_V3_Small_Weights.DEFAULT
         self.backbone = mobilenet_v3_small(weights=weights)
 
-        # RIMOSSO IL CONGELAMENTO DEI PESI:
-        # Ora l'intero backbone può aggiornarsi per riconoscere le mani.
-
         in_features = self.backbone.classifier[3].in_features
         self.backbone.classifier[3] = nn.Linear(in_features, num_classes)
 
@@ -57,7 +54,7 @@ class HandGestureFineTune(nn.Module):
 # 2. CLASSE GESTORE: TRAINING & TEST OTTIMIZZATI
 # ---------------------------------------------------------------------------
 class GestureClassifierCNN:
-    def __init__(self, num_classes=15, img_size=224, learning_rate=1e-4):  # LR Abbassato a 1e-4
+    def __init__(self, num_classes=15, img_size=224, learning_rate=1e-4):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.img_size = img_size
         self.model = HandGestureFineTune(num_classes).to(self.device)
@@ -67,7 +64,7 @@ class GestureClassifierCNN:
         # Ottimizzatore: aggiornato per passare tutti i parametri e gestire il weight_decay
         self.optimizer = optim.AdamW(self.model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
-        # Scheduler: Dimezza il LR (factor=0.5) se la Val Loss non migliora per 3 epoche (patience=3)
+        # Scheduler
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.5, patience=3)
 
         self.scaler = torch.amp.GradScaler('cuda', enabled=torch.cuda.is_available())
