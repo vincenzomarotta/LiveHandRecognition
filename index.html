@@ -642,7 +642,7 @@ body.editing .edit-banner{ display:block; }
           <ul class="points" style="margin-top:20px;max-width:780px">
             <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Attivazioni ReLU</b> tra gli strati: non linearità, evita la saturazione del gradiente, preferita alla classica sigmoide.</li>
             <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Loss cross-entropy</b>, lo standard per la classificazione multi-classe.</li>
-            <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Ottimizzatore Adam</b> con <b>early stopping</b> con patience 10: Adam è adatto per addestramento in <b>mini-batch</b>; max epoche a 5000 con early stopping per evitare overfitting e computazione eccessiva</li>
+            <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Ottimizzatore Adam</b> con <b>early stopping</b> con patience 10: Adam è adatto per addestramento in <b>mini-batch</b>; max epoche a 80 con early stopping per evitare overfitting e computazione eccessiva</li>
             <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Validazione holdout</b>: split fisso <b>80/10/10</b>; l'accuratezza finale sul <b>test set</b>. Rete <b>riaddestrata</b>.</li>
             <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>9.565 parametri</b>: l'input è già compatto e informativo, la rete può restare minuscola.</li>
             <li class="reveal" style="font-size:26px;margin-bottom:16px"><b>Limite</b> maggiore la forte dipendenza da mediapipe.</li>
@@ -735,7 +735,7 @@ body.editing .edit-banner{ display:block; }
       <div class="split vtext" style="margin-top:18px">
         <div>
           <ul class="points" style="margin-top:0;max-width:820px">
-            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">La convoluzione è un <b>filtro lineare</b>: un piccolo <b>kernel</b> scorre sull'immagine e in ogni posizione calcola una <b>somma pesata</b> dei pixel vicini, la stessa operazione dei filtri spaziali del corso.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">La convoluzione è un <b>filtro lineare</b>: un piccolo <b>kernel</b> scorre sull'immagine e in ogni posizione calcola una <b>somma pesata</b> dei pixel vicini.</li>
             <li class="b3 reveal" style="font-size:26px;margin-bottom:15px"><b>Filtri classici</b>: i pesi del kernel sono fissati a mano. Un kernel <b>gaussiano</b> leviga, i kernel di <b>Sobel</b> o il <b>Laplaciano</b> esaltano i bordi.</li>
             <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">In una <b>CNN</b> i pesi del kernel non sono fissati: vengono <b>appresi dai dati</b> durante il training. La rete scopre da sola quali filtri le servono.</li>
             <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">Impilando più convoluzioni si forma una <b>gerarchia</b>: bordi e contrasti, poi parti della mano, infine il gesto, l'equivalente appreso dell'analisi multi-scala.</li>
@@ -931,7 +931,7 @@ body.editing .edit-banner{ display:block; }
           <div class="formula" style="font-size:38px;margin-top:14px">χ² =
             <span class="frac"><span class="num">( | b − c | − 1 )²</span><span class="den">b + c</span></span>
           </div>
-          <div class="cite" style="margin-top:10px">McNemar, «Psychometrika», 1947 · −1 = correzione di continuità</div>
+          <div class="cite" style="margin-top:10px">McNemar, «Psychometrika», 1947</div>
         </div>
       </div>
     </section>
@@ -1026,7 +1026,7 @@ body.editing .edit-banner{ display:block; }
           <tr><td>Classificatori</td><td>2, euristico e rete</td><td class="win">3, con la CNN sui pixel</td></tr>
           <tr><td>Gesti</td><td>6 supportati (21 nel dataset)</td><td>15 (14 + NO GESTURE)</td></tr>
           <tr><td>Dataset</td><td>in-house privato</td><td><b>HaGRID</b> pubblico</td></tr>
-          <tr><td>Feature della rete</td><td>3D world-metric (intrinseche + estrinseche)</td><td>landmark 2D rel. al polso + 10 angoli</td></tr>
+          <tr><td>Feature della rete</td><td>3D world-metric</td><td>landmark 2D rel. al polso + 10 angoli</td></tr>
           <tr><td>Loss della rete</td><td>focal loss (classi sbilanciate)</td><td>cross-entropy</td></tr>
           <tr><td>Hand tracker</td><td>MediaPipe migliorato (ASL, 3D metrico)</td><td>MediaPipe standard, non ri-allenato</td></tr>
         </tbody>
@@ -1048,7 +1048,7 @@ body.editing .edit-banner{ display:block; }
         </tbody>
       </table>
       <div class="note reveal" style="position:relative;left:auto;right:auto;bottom:auto;margin-top:30px">
-        <p><span class="ntitle">Meglio, ma non totalmente confrontabili</span>La riproduzione <b>regge e migliora</b> rispetto al paper. C'è un aumento del 3% per la rete neurale e un miglioramento di ~11% sull'euristico. Inoltre, la CNN supera entrambi i modelli (come ci si poteva aspettare). Il confronto va letto in modo <span class="em">qualitativo</span>: dataset diverso, gesti diversi, mediapipe standard.</b>.</p>
+        <p><span class="ntitle">Meglio, ma non totalmente confrontabili</span>La riproduzione <b>regge e migliora</b> rispetto al paper. C'è un aumento del 3% per la rete neurale e un miglioramento di ~11% sull'euristico. Inoltre, la CNN supera entrambi i modelli (come ci si poteva aspettare). Il confronto va letto in modo <span class="em">qualitativo</span>: dataset diverso, gesti diversi, mediapipe standard</b>.</p>
       </div>
     </section>
 
