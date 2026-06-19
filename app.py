@@ -122,6 +122,10 @@ if __name__ == '__main__':
 
             frame = cv2.flip(frame, 1)
 
+            # ── Riduzione rumore: filtro Gaussiano passa-basso ────────────────
+            # Agisce sull'immagine prima di MediaPipe (euristico/NN) e CNN.
+            frame = cv2.GaussianBlur(frame, (5, 5), 0)
+
             # ── MediaPipe: processa in RGB ────────────────────────────────────
             frame.flags.writeable = False
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
