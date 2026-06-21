@@ -470,6 +470,37 @@ body.editing .edit-banner{ display:block; }
       </div>
     </section>
 
+    <!-- ============ 4e · PREPROCESSING / RIDUZIONE RUMORE ============ -->
+    <section class="slide">
+      <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Preprocessing</span></div>
+      <div class="kicker reveal">Uno step comune, prima di separare i rami</div>
+      <h2 class="reveal">Prima di tutto: <span class="ag">pre-processing</span></h2>
+      <div style="margin-top:24px">
+        <p class="prose tight reveal" style="margin-top:18px;font-size:26px;max-width:1400px">Ogni frame passa per un <b>filtro Gaussiano 5×5</b> (<code>cv2.GaussianBlur</code>): uno smoothing che attenua il rumore del sensore. È un passo <span class="hlg">condiviso da tutti e tre i modelli</span>, sui pixel <b>a monte</b> di MediaPipe e della CNN, prima che la pipeline si biforchi.</p>
+        <div class="reveal" style="display:flex;align-items:center;gap:40px;margin-top:34px">
+          <div class="formula" style="font-size:28px;flex:0 0 auto">G(x,y) = <span class="frac"><span class="num" style="white-space:nowrap">1</span><span class="den" style="white-space:nowrap">2πσ²</span></span> <span style="display:inline-block">e<sup style="vertical-align:super;font-size:0.6em;line-height:0">−(x²+y²)/(2σ²)</sup></span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;color:var(--fog);font-family:var(--font-mono);font-size:16px;flex:0 0 auto">
+            <span style="font-size:34px;line-height:1">→</span>
+            <span style="white-space:nowrap">campiono 5×5,<br>normalizzo</span>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:24px;color:#fff;display:flex;align-items:center;gap:16px;flex:0 0 auto">
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px 18px;text-align:right">
+              <span>1</span><span>4</span><span>7</span><span>4</span><span>1</span>
+              <span>4</span><span>16</span><span>26</span><span>16</span><span>4</span>
+              <span>7</span><span>26</span><span>41</span><span>26</span><span>7</span>
+              <span>4</span><span>16</span><span>26</span><span>16</span><span>4</span>
+              <span>1</span><span>4</span><span>7</span><span>4</span><span>1</span>
+            </div>
+            <span style="color:var(--fog)">× <span class="frac" style="vertical-align:middle"><span class="num">1</span><span class="den">273</span></span></span>
+          </div>
+        </div>
+        <p class="exnote reveal" style="margin-top:18px;max-width:1400px">Il <b>kernel</b> è la matrice di pesi che scorre sull'immagine: ogni pixel diventa la <b>media pesata</b> dei 25 vicini, il centro pesa più dei bordi.</p>
+      </div>
+      <div class="note reveal" style="bottom:48px;padding:20px 36px">
+        <p style="font-size:24px"><span class="ntitle">Filtraggio lineare</span>Il kernel gaussiano è un filtro lineare spaziale: smoothing contro il rumore gaussiano. All'aumentare di σ aumenta l'effetto di sfocatura. Utile contro rumori additivi dati da sensore della fotocamera, alte temperature o cattiva illuminazione. È sia isotropo che separabile.</p>
+      </div>
+    </section>
+
     <!-- ============ 5 · PIPELINE DATI / OUTPUT ============ -->
     <section class="slide">
       <div class="hud reveal"><span><span class="dot">●</span> 01 · IL TASK</span><span>Dalla foto ai numeri</span></div>
@@ -492,33 +523,13 @@ body.editing .edit-banner{ display:block; }
           </div>
           <p class="exnote reveal" style="margin-top:12px">A sinistra le <b>coordinate</b> dei punti; a destra l'<b>angolo</b> per ogni terna di giunti, con v₁ = P<sub>a</sub> − P<sub>b</sub>, v₂ = P<sub>c</sub> − P<sub>b</sub>. <b>10 angoli</b> in totale.</p>
         </div>
-        <div class="reveal" style="display:flex;justify-content:flex-end;padding-right:30px">
-          <!-- HAND LANDMARK SVG -->
-          <svg width="600" height="600" viewBox="0 80 520 540">
-            <defs><style>.bone{stroke:#46C58A;stroke-width:4;fill:none;opacity:.55}.pt{fill:#4C9BF0}.wr{fill:#F2956F}</style></defs>
-            <!-- bones -->
-            <g class="bone">
-              <path d="M260 470 L210 360 L185 270 L170 200"/>
-              <path d="M260 470 L250 330 L245 230 L242 160"/>
-              <path d="M260 470 L290 330 L300 225 L305 150"/>
-              <path d="M260 470 L330 345 L350 250 L362 180"/>
-              <path d="M260 470 L300 410 L355 360 L395 325"/>
-            </g>
-            <!-- joints -->
-            <g class="pt">
-              <circle cx="210" cy="360" r="9"/><circle cx="185" cy="270" r="9"/><circle cx="170" cy="200" r="11"/>
-              <circle cx="250" cy="330" r="9"/><circle cx="245" cy="230" r="9"/><circle cx="242" cy="160" r="11"/>
-              <circle cx="290" cy="330" r="9"/><circle cx="300" cy="225" r="9"/><circle cx="305" cy="150" r="11"/>
-              <circle cx="330" cy="345" r="9"/><circle cx="350" cy="250" r="9"/><circle cx="362" cy="180" r="11"/>
-              <circle cx="300" cy="410" r="9"/><circle cx="355" cy="360" r="9"/><circle cx="395" cy="325" r="11"/>
-            </g>
-            <circle class="wr" cx="260" cy="470" r="15"/>
-            <text x="260" y="512" fill="#8AA0B8" font-family="JetBrains Mono" font-size="20" text-anchor="middle">21 landmark</text>
-          </svg>
+        <div class="reveal" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding-right:30px">
+          <img src="assets/hand.png" alt="21 keypoint MediaPipe della mano" style="width:600px;display:block">
+          <div style="color:#8AA0B8;font-family:var(--font-mono);font-size:20px;text-align:center;margin-top:10px">21 landmark</div>
         </div>
       </div>
       <div class="note reveal" style="bottom:48px;padding:20px 36px">
-        <p style="font-size:24px"><span class="ntitle">Formazione dell'immagine</span>Il sensore cattura un solo colore per pixel: il colore pieno è poi <span class="em">ricostruito per interpolazione</span> (demosaicing). La profondità è solo relativa quindi la mano è trattata come quasi-piatta (perspective), ipotesi valida vista la distanza tipica dalla camera.</p>
+        <p style="font-size:24px"><span class="ntitle">Formazione dell'immagine</span>La profondità restituita è solo relativa, quindi la mano è trattata come <span class="em">quasi-piatta</span> (perspective): ipotesi valida vista la distanza tipica dalla camera, ed è ciò che giustifica la correzione via omografia.</p>
       </div>
     </section>
 
@@ -577,29 +588,44 @@ body.editing .edit-banner{ display:block; }
           <ul class="points" style="margin-top:6px;max-width:780px">
             <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Capire se il pollice è <b>incrociato</b> sul palmo dipende molto dall'angolo di ripresa.</li>
             <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Più in generale, le immagini hanno mani in posizioni <b>differenti</b> quindi serve un modo per uniformarle e avere keypoints normalizzati.</li>
-            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Soluzione: la mano viene <b>raddrizzata</b> in vista frontale canonica con una <b>omografia</b>, la trasformazione che mappa un piano su un altro.</li>
-            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">I riferimenti si trovano con la <b>Trasformata di Hough</b>; da quattro corrispondenze si ricava la matrice di omografia, in OpenCV.</li>
-            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Riportati pollice e palmo in posizione standard, la soglia sull'angolo del pollice diventa affidabile.</li>
+            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">Soluzione: la mano viene <b>raddrizzata</b> in vista frontale canonica con una <b>omografia</b>.</li>
+            <li class="b1 reveal" style="font-size:26px;margin-bottom:16px">I riferimenti si trovano con la <b>Trasformata di Hough</b> su un immagine template (0-5-9-17). Da qui si ricava <b>H</b>.</li>
           </ul>
         </div>
-        <div class="reveal" style="display:flex;justify-content:center;align-items:center">
-          <!-- homography schema -->
-          <svg width="540" height="360" viewBox="0 0 540 360">
-            <defs><style>.q{fill:rgba(242,149,111,.10);stroke:#F2956F;stroke-width:3}.hp{fill:#4C9BF0}.lb{fill:#8AA0B8;font-family:JetBrains Mono;font-size:18px;text-anchor:middle}.hh{fill:#fff;font-family:Fraunces,serif;font-style:italic;font-size:34px;text-anchor:middle}</style></defs>
-            <polygon class="q" points="30,70 200,40 215,250 45,290"/>
-            <circle class="hp" cx="80" cy="110" r="6"/><circle class="hp" cx="150" cy="95" r="6"/><circle class="hp" cx="160" cy="200" r="6"/><circle class="hp" cx="90" cy="220" r="6"/>
-            <text class="lb" x="120" y="330">vista in prospettiva</text>
-            <line x1="248" y1="165" x2="318" y2="165" stroke="#CFDDEC" stroke-width="3"/>
-            <polygon points="318,158 336,165 318,172" fill="#CFDDEC"/>
-            <text class="hh" x="292" y="150">H</text>
-            <rect class="q" x="360" y="80" width="160" height="160" rx="4"/>
-            <circle class="hp" cx="395" cy="115" r="6"/><circle class="hp" cx="485" cy="115" r="6"/><circle class="hp" cx="485" cy="205" r="6"/><circle class="hp" cx="395" cy="205" r="6"/>
-            <text class="lb" x="440" y="330">vista canonica</text>
-          </svg>
+        <div class="reveal" style="display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:10px;margin-top:-80px">
+          <!-- homography input/output reale -->
+          <img src="assets/reference.png" alt="Omografia: mano in prospettiva a sinistra, vista canonica a destra" style="width:600px;display:block">
+          <div style="display:flex;justify-content:space-between;width:510px;color:#8AA0B8;font-family:var(--font-mono);font-size:18px"><span>vista in prospettiva</span><span>vista canonica</span></div>
+          <div class="formula" style="font-size:21px;flex-direction:row;align-items:center;gap:28px">
+            <span style="display:inline-flex;align-items:center;gap:12px">
+              <span style="display:inline-flex;border-left:2px solid currentColor;border-right:2px solid currentColor;padding:3px 6px">
+                <span style="display:grid;grid-template-columns:1fr;gap:6px;text-align:center">
+                  <span>x&prime;</span><span>y&prime;</span><span>w&prime;</span>
+                </span>
+              </span>
+              =
+              <span style="display:inline-flex;border-left:2px solid currentColor;border-right:2px solid currentColor;padding:3px 9px">
+                <span style="display:grid;grid-template-columns:repeat(3,auto);gap:7px 16px;text-align:center">
+                  <span>h₁₁</span><span>h₁₂</span><span>h₁₃</span>
+                  <span>h₂₁</span><span>h₂₂</span><span>h₂₃</span>
+                  <span>h₃₁</span><span>h₃₂</span><span>h₃₃</span>
+                </span>
+              </span>
+              <span style="display:inline-flex;border-left:2px solid currentColor;border-right:2px solid currentColor;padding:3px 6px">
+                <span style="display:grid;grid-template-columns:1fr;gap:6px;text-align:center">
+                  <span>x</span><span>y</span><span>1</span>
+                </span>
+              </span>
+            </span>
+            <span style="display:inline-flex;flex-direction:column;gap:12px;font-size:0.95em">
+              <span style="display:inline-flex;align-items:center;gap:8px">u = <span class="frac"><span class="num">x&prime;</span><span class="den">w&prime;</span></span></span>
+              <span style="display:inline-flex;align-items:center;gap:8px">v = <span class="frac"><span class="num">y&prime;</span><span class="den">w&prime;</span></span></span>
+            </span>
+          </div>
         </div>
       </div>
       <div class="note reveal" style="bottom:46px">
-        <p><span class="ntitle">Trasformata di Hough e Omografia</span>La <span class="em">Trasformata di Hough</span> individua forme circolari note nell'immagine; da queste si stima la <span class="em">trasformazione prospettica tra due piani</span>, l'omografia, che riporta la mano in vista canonica. È lo stesso principio della calibrazione geometrica di una camera.</p>
+        <p><span class="ntitle">Trasformata di Hough e Omografia</span>La <span class="em">Trasformata di Hough</span> individua forme circolari note nell'immagine; da queste si stima la <span class="em">trasformazione prospettica tra due piani</span>, l'omografia, che riporta la mano in vista canonica.</p>
       </div>
     </section>
 
@@ -686,7 +712,7 @@ body.editing .edit-banner{ display:block; }
       <div class="hud reveal"><span style="color:var(--green)"><span class="dot">●</span> MODELLO 2 · RETE SU KEYPOINT</span><span>Feature invarianti</span></div>
       <div class="kicker reveal">L'importanza dell'input</div>
       <h2 class="reveal">Feature che <span class="ag">non si lasciano ingannare</span></h2>
-      <p class="prose tight reveal">La forza di questo modello è che le feature sono costruite per essere <b>invarianti</b> alle cose che non contano: dove si trova la mano, quanto è grande, come è ruotata. La rete riceve quindi una descrizione stabile dello stesso gesto, da qualunque angolazione.</p>
+      <p class="prose tight reveal">La forza di questo modello è che le feature sono costruite per essere <b>invarianti</b> alle cose che non contano: dove si trova la mano e quanto è grande. Gli <b>angoli</b> di piegamento delle dita restano stabili anche quando la mano è inclinata, perché catturano la posa intrinseca. La rete riceve quindi una descrizione coerente dello stesso gesto.</p>
       <div class="cols c2 reveal" style="margin-top:30px">
         <div class="colcard n"><h3>Coordinate relative al polso</h3><p>Misurando tutto rispetto al polso e normalizzando sulla dimensione della mano, il gesto resta identico se la mano si <b>sposta</b> nell'inquadratura o è più vicina/lontana dalla camera.</p></div>
         <div class="colcard n"><h3>Angoli tra le articolazioni</h3><p>Gli angoli di piegamento delle dita non cambiano se ruoto la mano: catturano la <b>posa intrinseca</b>, indipendente dall'orientamento.</p></div>
@@ -706,7 +732,7 @@ body.editing .edit-banner{ display:block; }
           <ul class="points" style="margin-top:0;max-width:820px">
             <li class="b3 reveal" style="font-size:26px;margin-bottom:16px">La CNN lavora direttamente sull'immagine e impara da sé quali dettagli osservare, senza feature progettate a mano.</li>
             <li class="b3 reveal" style="font-size:26px;margin-bottom:16px">Base è <b>MobileNetV3-Small</b>, architettura leggera e ottima anche per dispositivi mobili, già addestrata su milioni di immagini; viene ri-addestrata interamente sul questo task.</li>
-            <li class="b3 reveal" style="font-size:26px;margin-bottom:16px"><b>Fine-tuned</b> per riusare le conoscenze visive di base già pronte, bordi, texture e forme, taglia il <span class="hl">costo di training</span> e migliora l'accuratezza.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:16px"><b>Fine-tuned</b> per riusare le conoscenze visive di base già pronte, texture e forme, taglia il <span class="hl">costo di training</span> e migliora l'accuratezza.</li>
             <li class="b3 reveal" style="font-size:26px;margin-bottom:16px">Ingresso ridotto a 224×224 pixel per aumentare velocità del training e non saturare la <b>VRAM</b>, ~<b>1,5 milioni</b> di parametri.</li>
             <li class="b3 reveal" style="font-size:26px;margin-bottom:16px">Output layer da 1000 a 15 classi.</li>
           </ul>
@@ -718,7 +744,7 @@ body.editing .edit-banner{ display:block; }
             <text class="cbt" x="210" y="54">immagine</text><text class="ccap" x="210" y="78">224 × 224 × 3</text>
             <line class="car" x1="210" y1="100" x2="210" y2="138"/><polygon points="203,138 210,154 217,138" fill="#CFDDEC"/>
             <rect class="cbx" x="80" y="160" width="260" height="104" rx="10"/>
-            <text class="cbt" x="210" y="198">MobileNetV3-Small</text><text class="ccap" x="210" y="226">blocchi convoluzionali</text><text class="ccap" x="210" y="248">bordi → parti → gesto</text>
+            <text class="cbt" x="210" y="198">MobileNetV3-Small</text><text class="ccap" x="210" y="226">blocchi convoluzionali</text><text class="ccap" x="210" y="248">texture → parti → gesto</text>
             <line class="car" x1="210" y1="268" x2="210" y2="306"/><polygon points="203,306 210,322 217,306" fill="#CFDDEC"/>
             <rect class="cbx" x="110" y="330" width="200" height="76" rx="10" style="stroke:#46C58A"/>
             <text class="cbt" x="210" y="364">15 classi</text><text class="ccap" x="210" y="388">softmax</text>
@@ -736,12 +762,12 @@ body.editing .edit-banner{ display:block; }
         <div>
           <ul class="points" style="margin-top:0;max-width:820px">
             <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">La convoluzione è un <b>filtro lineare</b>: un piccolo <b>kernel</b> scorre sull'immagine e in ogni posizione calcola una <b>somma pesata</b> dei pixel vicini.</li>
-            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px"><b>Filtri classici</b>: i pesi del kernel sono fissati a mano. Un kernel <b>gaussiano</b> leviga, i kernel di <b>Sobel</b> o il <b>Laplaciano</b> esaltano i bordi.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px"><b>Filtri classici</b>: i pesi del kernel sono fissati a mano. Un kernel <b>gaussiano</b>, per esempio, leviga l'immagine (smoothing).</li>
             <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">In una <b>CNN</b> i pesi del kernel non sono fissati: vengono <b>appresi dai dati</b> durante il training. La rete scopre da sola quali filtri le servono.</li>
-            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">Impilando più convoluzioni si forma una <b>gerarchia</b>: bordi e contrasti, poi parti della mano, infine il gesto, l'equivalente appreso dell'analisi multi-scala.</li>
+            <li class="b3 reveal" style="font-size:26px;margin-bottom:15px">Impilando più convoluzioni si forma una <b>gerarchia di feature</b>: texture e contrasti, poi parti della mano, infine il gesto, un'astrazione via via più complessa appresa dai dati.</li>
           </ul>
         </div>
-        <div class="reveal" style="display:flex;justify-content:center;align-items:center">
+        <div class="reveal" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px">
           <svg width="500" height="420" viewBox="0 0 500 420">
             <defs><style>.gc{fill:#18243A;stroke:#2a3a52;stroke-width:1.5}.win{fill:none;stroke:#4C9BF0;stroke-width:4}.kb{fill:#0C1320;stroke:#4C9BF0;stroke-width:2}.kt{fill:#CFDDEC;font-family:JetBrains Mono;font-size:18px;text-anchor:middle}.oc{fill:#46C58A;opacity:.85;stroke:#0C1320;stroke-width:1.5}.lab{fill:#CFDDEC;font-family:JetBrains Mono;font-size:21px;text-anchor:middle}.ar{stroke:#CFDDEC;stroke-width:3;fill:none}</style></defs>
             <!-- input grid 5x5 -->
@@ -766,10 +792,24 @@ body.editing .edit-banner{ display:block; }
             </g>
             <text class="lab" x="420" y="230">feature map</text>
           </svg>
+          <div class="formula" style="font-size:30px;flex:0 0 auto">
+            <span style="display:inline-block">I&prime;<sub style="vertical-align:sub;font-size:0.58em;line-height:0">ij</sub></span>
+            =
+            <span style="display:inline-flex;flex-direction:column;align-items:center;font-size:0.45em;line-height:1.05;font-style:normal">
+              <span>a</span><span style="font-size:2.1em;line-height:.85">&Sigma;</span><span>s=&minus;a</span>
+            </span>
+            <span style="display:inline-flex;flex-direction:column;align-items:center;font-size:0.45em;line-height:1.05;font-style:normal">
+              <span>b</span><span style="font-size:2.1em;line-height:.85">&Sigma;</span><span>t=&minus;b</span>
+            </span>
+            <span style="display:inline-block">I<sub style="vertical-align:sub;font-size:0.58em;line-height:0">i+s,&thinsp;j+t</sub></span>
+            <span style="font-style:normal">&middot;</span>
+            <span style="display:inline-block">h<sub style="vertical-align:sub;font-size:0.58em;line-height:0">s&minus;a,&thinsp;t&minus;b</sub></span>
+          </div>
+          <p class="exnote reveal" style="margin-top:0;text-align:center">Convoluzione: <b>I</b> immagine, <b>h</b> kernel di semi-ampiezza <b>a</b>×<b>b</b>.</p>
         </div>
       </div>
       <div class="note reveal" style="position:relative;left:auto;right:auto;bottom:auto;margin-top:18px;border-left:6px solid var(--blue)">
-        <p style="font-size:23px"><span class="ntitle">Dal classico al moderno</span>I filtri classici come media e gaussiano per lo <span class="em">smoothing</span>, Sobel e Laplaciano per i <span class="em">bordi</span>, sono convoluzioni con kernel scelti a mano. <br>La CNN usa la <b>stessa identica operazione</b>, ma <b>impara i kernel</b> dai dati invece di progettarli.</p>
+        <p style="font-size:23px"><span class="ntitle">Dal classico al moderno</span>I filtri classici come media e gaussiano per lo <span class="em">smoothing</span> sono convoluzioni con kernel scelti a mano. <br>La CNN usa la <b>stessa identica operazione</b>, ma <b>impara i kernel</b> dai dati invece di progettarli.</p>
       </div>
     </section>
 
@@ -815,12 +855,12 @@ body.editing .edit-banner{ display:block; }
 <!--        <div class="colcard c">-->
 <!--          <svg width="120" height="60" viewBox="0 0 120 60" style="margin-bottom:14px"><g stroke="#4C9BF0" stroke-width="4" fill="none"><line x1="10" y1="50" x2="50" y2="10"/><line x1="40" y1="52" x2="80" y2="12"/><line x1="70" y1="50" x2="110" y2="10"/></g></svg>-->
 <!--          <h3 style="font-size:30px">Strati iniziali</h3>-->
-<!--          <p><b>Bordi, contrasti e texture.</b> Filtri simili a Sobel o gaussiano, ma <b>appresi</b>: rispondono alle transizioni di luminosità.</p>-->
+<!--          <p><b>Texture e contrasti.</b> Filtri simili al gaussiano, ma <b>appresi</b>: rispondono alle transizioni di luminosità.</p>-->
 <!--        </div>-->
 <!--        <div class="colcard c">-->
 <!--          <svg width="120" height="60" viewBox="0 0 120 60" style="margin-bottom:14px"><path d="M20 50 L20 14 L86 14" stroke="#4C9BF0" stroke-width="5" fill="none"/><circle cx="20" cy="14" r="6" fill="#46C58A"/></svg>-->
 <!--          <h3 style="font-size:30px">Strati intermedi</h3>-->
-<!--          <p>Combinano i bordi in <b>angoli, curve e parti di dito</b>: i pezzi ricorrenti che compongono la mano.</p>-->
+<!--          <p>Combinano le texture in <b>angoli, curve e parti di dito</b>: i pezzi ricorrenti che compongono la mano.</p>-->
 <!--        </div>-->
 <!--        <div class="colcard c">-->
 <!--          <svg width="120" height="60" viewBox="0 0 120 60" style="margin-bottom:14px"><text x="60" y="48" font-size="46" text-anchor="middle">✋</text></svg>-->
@@ -829,7 +869,7 @@ body.editing .edit-banner{ display:block; }
 <!--        </div>-->
 <!--      </div>-->
 <!--      <div class="note reveal" style="bottom:40px;border-left:6px solid var(&#45;&#45;blue)">-->
-<!--        <p style="font-size:23px"><span class="ntitle">Gerarchia e Scale-space</span>È la stessa logica dell'analisi <span class="em">multi-scala</span> classica: combinare risposte semplici, i bordi, in strutture via via più complesse. La differenza è che qui la gerarchia non è progettata a mano, ma <b>appresa dai dati</b>.</p>-->
+<!--        <p style="font-size:23px"><span class="ntitle">Gerarchia e Scale-space</span>È la stessa logica dell'analisi <span class="em">multi-scala</span> classica: combinare risposte semplici, le texture locali, in strutture via via più complesse. La differenza è che qui la gerarchia non è progettata a mano, ma <b>appresa dai dati</b>.</p>-->
 <!--      </div>-->
 <!--    </section>-->
 
@@ -1002,7 +1042,7 @@ body.editing .edit-banner{ display:block; }
         <div class="card reveal"><img src="assets/05_tradeoff.png" alt="Efficienza" style="width:720px"></div>
       </div>
       <div class="note reveal" style="bottom:40px">
-        <p>MediaPipe fallisce su immagini degradate (rumore, motion blur). Filtri di smoothing (<b>gaussiano / mediano</b>) come pre-processing potrebbero recuperarle. La CNN è intrinsecamente più robusta perché apprende feature tolleranti al degrado.</p>
+        <p>MediaPipe fallisce su immagini degradate (rumore impulsivo, motion blur). Altri filtri di smoothing (<b>mediano o conservativo</b>) come pre-processing potrebbero recuperarle. La CNN è intrinsecamente più robusta perché apprende feature tolleranti al degrado.</p>
       </div>
     </section>
 
@@ -1156,7 +1196,6 @@ body.editing .edit-banner{ display:block; }
       <h1 class="reveal">Grazie per<br>l'<span>attenzione</span></h1>
       <div class="cfoot reveal"><b>Vincenzo Marotta</b> · <span>N97000512</span> · Progetto di Computer Vision</div>
     </section>
-
   </main>
 </div>
 
@@ -1175,14 +1214,43 @@ class SlidePresentation{
     this.i=0; this.stage=document.getElementById('deckStage');
     this.progress=document.getElementById('progress'); this.pagecount=document.getElementById('pagecount');
     this.scrollLock=false;
+    this.buildNums();
     this.fit(); addEventListener('resize',()=>this.fit());
     this.keys(); this.touch(); this.wheel(); this.show(0);
+  }
+  /* Numerazione visibile: salta titolo/divider/closing; accorpa coppie di slide
+     che trattano lo stesso concetto sotto un unico numero. Non altera le slide. */
+  buildNums(){
+    const norm=s=>(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    /* ogni sotto-array = slide che condividono lo stesso numero */
+    const groups=[
+      ['La pipeline completa','Tecnologie'],
+      ['Preprocessing','Dalla foto ai numeri'],
+      ['Il pollice e la prospettiva','Le soglie fisse'],
+      ['Architettura','Feature invarianti'],
+      ['Il filtro convoluzionale','Robustezza e feature apprese'],
+      ['F1-score per classe','Precision · Recall · F1 medi'],
+      ['La strategia','Esito dei test'],
+      ['Dove mi sono allontanato','Le differenze nei risultati'],
+    ];
+    const gmap={}; groups.forEach((g,gi)=>g.forEach(t=>gmap[norm(t)]=gi));
+    const subtitleOf=s=>{ const h=s.querySelector('.hud span:last-child'); return h?h.textContent.trim():null; };
+    let n=0, prevG=null;
+    this.nums=this.slides.map(s=>{
+      const skip=s.classList.contains('divider')||s.classList.contains('title-slide')||s.classList.contains('closing')||s.hasAttribute('data-nonum')||!s.querySelector('.hud');
+      if(skip){ prevG=null; return null; }
+      const gi=gmap[norm(subtitleOf(s))];
+      if(gi!==undefined && gi===prevG) return n;   // accorpata alla precedente
+      n++; prevG=(gi!==undefined)?gi:'#'+n; return n;
+    });
+    this.total=n;
   }
   fit(){ const f=Math.min(innerWidth/1920,innerHeight/1080);
     this.stage.style.transform=`translate(${(innerWidth-1920*f)/2}px,${(innerHeight-1080*f)/2}px) scale(${f})`; }
   show(n){ this.i=Math.max(0,Math.min(n,this.slides.length-1));
     this.slides.forEach((s,k)=>{ s.classList.toggle('active',k===this.i); s.classList.toggle('visible',k===this.i); });
-    this.pagecount.innerHTML=`<b>${String(this.i+1).padStart(2,'0')}</b> / ${String(this.slides.length).padStart(2,'0')}`;
+    const dn=this.nums[this.i];
+    this.pagecount.innerHTML = dn==null ? '' : `<b>${String(dn).padStart(2,'0')}</b> / ${String(this.total).padStart(2,'0')}`;
     this.progress.style.width=((this.i+1)/this.slides.length*100)+'%'; }
   next(){ this.show(this.i+1); } prev(){ this.show(this.i-1); }
   keys(){ addEventListener('keydown',e=>{
