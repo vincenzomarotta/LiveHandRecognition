@@ -595,7 +595,7 @@ body.editing .edit-banner{ display:block; }
         <div class="reveal" style="display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:10px;margin-top:-80px">
           <!-- homography input/output reale -->
           <img src="assets/reference.png" alt="Omografia: mano in prospettiva a sinistra, vista canonica a destra" style="width:600px;display:block">
-          <div style="display:flex;justify-content:space-between;width:510px;color:#8AA0B8;font-family:var(--font-mono);font-size:18px"><span>vista in prospettiva</span><span>vista canonica</span></div>
+          <div style="display:flex;justify-content:space-between;width:510px;color:#8AA0B8;font-family:var(--font-mono);font-size:18px"><span>vista canonica</span><span>vista in prospettiva</span></div>
           <div class="formula" style="font-size:21px;flex-direction:row;align-items:center;gap:28px">
             <span style="display:inline-flex;align-items:center;gap:12px">
               <span style="display:inline-flex;border-left:2px solid currentColor;border-right:2px solid currentColor;padding:3px 6px">
@@ -928,7 +928,7 @@ body.editing .edit-banner{ display:block; }
           <tr><td>Accuratezza</td><td>55.1%</td><td>90.8%</td><td class="win">92.0%</td></tr>
         </tbody>
       </table>
-      <p class="caption reveal" style="margin-top:18px;font-size:21px">Medie <b>macro</b> sulle 15 classi, calcolate sul test set completo di ciascuna rete. Per la CNN ciò include anche le immagini dove MediaPipe fallisce (44.207 campioni): l'accuratezza scende così al 92,0%, leggermente sotto il <b>94,67%</b> del confronto diretto sulle sole mani rilevate. L'euristico, che sbaglia in blocco i gesti aperti, perde molto più sulla F1 che sulla sola accuratezza.</p>
+      <p class="caption reveal" style="margin-top:18px;font-size:21px">Medie <b>macro</b> sulle 15 classi, calcolate sul test set completo di ciascuna rete. Per la CNN ciò include anche le immagini dove MediaPipe fallisce: l'accuratezza scende così al 92,0%, leggermente sotto il <b>94,67%</b> del confronto diretto sulle sole mani rilevate. L'euristico, che sbaglia in blocco i gesti aperti, perde molto più sulla F1 che sulla sola accuratezza.</p>
     </section>
 
     <!-- ============ 18 · CURVE TRAINING ============ -->
