@@ -7,16 +7,14 @@ import csv
 
 
 def calculate_finger_angles(pure_landmarks):
-    """
-    Calcola gli angoli di piegamento usando le coordinate pure di MediaPipe.
-    """
+    """Compute bend angles from the raw MediaPipe coordinates."""
     angles = []
     joint_triplets = [
-        (1, 2, 3), (2, 3, 4),  # Pollice
-        (5, 6, 7), (6, 7, 8),  # Indice
-        (9, 10, 11), (10, 11, 12),  # Medio
-        (13, 14, 15), (14, 15, 16),  # Anulare
-        (17, 18, 19), (18, 19, 20)  # Mignolo
+        (1, 2, 3), (2, 3, 4),      # Thumb
+        (5, 6, 7), (6, 7, 8),      # Index
+        (9, 10, 11), (10, 11, 12),  # Middle
+        (13, 14, 15), (14, 15, 16),  # Ring
+        (17, 18, 19), (18, 19, 20)  # Pinky
     ]
 
     lm = np.array(pure_landmarks)
@@ -34,29 +32,28 @@ def calculate_finger_angles(pure_landmarks):
 
 
 def pre_process_landmark(landmark_list, image):
-    """
-    Estrae X, Y (in pixel) e Z (relativo) dai landmark di MediaPipe.
-    Restituisce una lista di 21 liste: [[x0, y0, z0], [x1, y1, z1], ...]
-    """
+    """Extract X, Y (in pixels) and Z (relative) from the MediaPipe landmarks.
+    Return a list of 21 lists: [[x0, y0, z0], [x1, y1, z1], ...]."""
     image_width, image_height = image.shape[1], image.shape[0]
 
     landmark_point = []
 
     for _, landmark in enumerate(landmark_list.landmark):
-        # Mappa X e Y ai pixel dell'immagine
+        # Map X and Y to image pixels
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
         landmark_y = min(int(landmark.y * image_height), image_height - 1)
 
-        # Mantiene Z così com'è (è già un valore relativo alla scala della mano)
+        # Keep Z as is (already relative to the hand scale)
         landmark_z = landmark.z
 
-        # IMPORTANTE: Aggiungiamo tutte e 3 le coordinate!
         landmark_point.append([landmark_x, landmark_y, landmark_z])
 
     return landmark_point
 
 
 def normalize_wrt_keypoint(landmarks, keypoint, one_d=False):
+    """Shift landmarks so keypoint becomes the origin, then scale by the max
+    absolute value. Returns a flat list when one_d is True."""
     tmp_landmarks = copy.deepcopy(landmarks)
 
     base_x = keypoint[0]
@@ -64,22 +61,18 @@ def normalize_wrt_keypoint(landmarks, keypoint, one_d=False):
     base_z = keypoint[2]
 
     for index, landmark_point in enumerate(tmp_landmarks):
-        # 2. Sottraiamo il punto base anche all'asse Z
         tmp_landmarks[index][0] = tmp_landmarks[index][0] - base_x
         tmp_landmarks[index][1] = tmp_landmarks[index][1] - base_y
         tmp_landmarks[index][2] = tmp_landmarks[index][2] - base_z
 
-        # Convert to one-dimensional list
     one_d_landmarks = list(chain.from_iterable(tmp_landmarks))
 
-    # Take the maximum value from one-dimensional list
     max_value = max(list(map(abs, one_d_landmarks)))
 
-    # Prevenzione divisione per zero (sicurezza)
+    # Guard against division by zero
     if max_value == 0:
         max_value = 1.0
 
-    # Normalize the value
     normalize = lambda x: x / max_value
 
     if one_d:
@@ -91,6 +84,7 @@ def normalize_wrt_keypoint(landmarks, keypoint, one_d=False):
 
 
 def bounding_rec(landmarks):
+    """Return the bounding box [x_min, y_min, x_max, y_max] of the landmarks."""
     landmark_array = np.empty((0, 2), int)
     for landmark in landmarks:
         landmark_point = [np.array((landmark[0], landmark[1]), dtype=np.int16)]
@@ -101,6 +95,7 @@ def bounding_rec(landmarks):
 
 
 def draw_info_text(frame, brect, handedness, hand_sign_text):
+    """Draw the bounding box and the predicted gesture label on the frame."""
     cv2.rectangle(frame, (brect[0], brect[1]), (brect[2], brect[3]), (0, 0, 0), 1)
     cv2.rectangle(frame, (brect[0], brect[1]), (brect[2], brect[1] - 22), (0, 0, 0), -1)
 
@@ -114,6 +109,7 @@ def draw_info_text(frame, brect, handedness, hand_sign_text):
 
 
 def draw_info(frame, mode, number):
+    """Overlay the current logging mode and selected number (keypoint capture)."""
     mode_string = ['Logging Key Point']
     if mode == 1:
         cv2.putText(frame, "MODE: " + mode_string[mode - 1], (10, 90),
@@ -127,11 +123,13 @@ def draw_info(frame, mode, number):
 
 
 def select_mode(key, mode):
+    """Map a key press to the capture mode: digits 0-9 set the number,
+    'n' disables logging, 'k' enables keypoint logging."""
     number = -1
     if 48 <= key <= 57:  # 0 ~ 9
         number = key - 48
 
-    if key == 110:  #  n
+    if key == 110:  # n
         mode = 0
     if key == 107:  # k
         mode = 1
@@ -140,6 +138,7 @@ def select_mode(key, mode):
 
 
 def draw_hand(frame, landmarks):
+    """Draw the 21 hand landmarks and the skeleton connections on the frame."""
     scaled_landmarks = []
     radius = 5
     for _, landmark in enumerate(landmarks):
@@ -179,12 +178,11 @@ def draw_hand(frame, landmarks):
 
 
 def angle_between(v1, v2):
+    """Return the angle in radians between two vectors."""
     def unit_vector(vector):
         norm = np.linalg.norm(vector)
-        # Protezione contro la divisione per zero
+        # Guard against division by zero: a near-zero vector is returned unchanged
         if norm < 1e-6:
-            # Se il vettore è praticamente un punto (norma ~ 0),
-            # restituiamo il vettore originale (che è uno zero array)
             return vector
         return vector / norm
 

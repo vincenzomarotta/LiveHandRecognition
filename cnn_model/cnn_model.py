@@ -1,4 +1,3 @@
-# cnn
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,10 +9,10 @@ import numpy as np
 import time
 import os
 import copy
-import csv
-from cnn_model.load_and_plot import *
+from utils.metrics import (GESTURE_NAMES, plot_training_history, plot_confusion_matrix,
+                           save_metrics_csv, save_per_sample_csv)
 
-# --- CONFIGURAZIONE ---
+# --- CONFIGURATION ---
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TRAIN_DIR = os.path.join(project_root, 'dataset', 'hagrid_dataset_split', 'train')
 VAL_DIR = os.path.join(project_root, 'dataset', 'hagrid_dataset_split', 'val')
@@ -27,15 +26,9 @@ PATIENCE = 5
 
 NUM_WORKERS = min(8, os.cpu_count())
 
-GESTURE_NAMES = [
-    'CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK',
-    'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK', 'STOP',
-    'THREE', 'TWO', 'NO GESTURE'
-]
-
 
 # ---------------------------------------------------------------------------
-# 1. MODELLO MOBILENET V3 (FULL FINE-TUNING)
+# 1. MOBILENET V3 MODEL (FULL FINE-TUNING)
 # ---------------------------------------------------------------------------
 class HandGestureFineTune(nn.Module):
     def __init__(self, num_classes):
@@ -51,7 +44,7 @@ class HandGestureFineTune(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# 2. CLASSE GESTORE: TRAINING & TEST OTTIMIZZATI
+# 2. MANAGER CLASS: OPTIMIZED TRAINING & TEST
 # ---------------------------------------------------------------------------
 class GestureClassifierCNN:
     def __init__(self, num_classes=15, img_size=224, learning_rate=1e-4):
@@ -61,17 +54,16 @@ class GestureClassifierCNN:
 
         self.criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
-        # Ottimizzatore: aggiornato per passare tutti i parametri e gestire il weight_decay
+        # Pass all parameters and apply weight decay
         self.optimizer = optim.AdamW(self.model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
-        # Scheduler
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.5, patience=3)
 
         self.scaler = torch.amp.GradScaler('cuda', enabled=torch.cuda.is_available())
 
         self.history = {'accuracy': [], 'val_accuracy': [], 'loss': [], 'val_loss': []}
 
-        # Trasformazioni: Aggiunte rotazioni e traslazioni specifiche per l'orientamento delle mani
+        # Train-time augmentation: rotations and translations suited to hand orientation
         self.train_transform = transforms.Compose([
             transforms.Resize((img_size, img_size)),
             transforms.RandomHorizontalFlip(),
@@ -89,7 +81,7 @@ class GestureClassifierCNN:
         ])
 
     def train(self, train_dir, val_dir, epochs=50, batch_size=128, patience=10):
-        print(f"\n--- Inizio Training Ottimizzato su {self.device} ---")
+        print(f"\n--- Starting optimized training on {self.device} ---")
 
         train_data = datasets.ImageFolder(train_dir, transform=self.train_transform)
         val_data = datasets.ImageFolder(val_dir, transform=self.eval_transform)
@@ -145,7 +137,7 @@ class GestureClassifierCNN:
             print(
                 f"Epoch {epoch + 1:2d}/{epochs} | Val Acc: {self.history['val_accuracy'][-1]:.3f} | Val Loss: {ep_val_loss:.4f}")
 
-            # STEP DELLO SCHEDULER: analizza la loss di validazione corrente
+            # Step the scheduler on the current validation loss
             self.scheduler.step(ep_val_loss)
 
             if ep_val_loss < best_loss:
@@ -155,7 +147,7 @@ class GestureClassifierCNN:
             else:
                 counter += 1
                 if counter >= patience:
-                    print(f"\nEarly stopping innescato all'epoca {epoch + 1}.")
+                    print(f"\nEarly stopping triggered at epoch {epoch + 1}.")
                     break
 
         self.model.load_state_dict(best_model_wts)
@@ -164,17 +156,15 @@ class GestureClassifierCNN:
     def evaluate(self, test_dir, batch_size=64,
                  output_csv="test_results_cnn2d.csv",
                  metrics_csv="metrics_summary_cnn.csv"):
-        print(f"\n--- Valutazione su Test Set (Batch Size: {batch_size}) ---")
+        print(f"\n--- Evaluating on the test set (batch size: {batch_size}) ---")
         test_data = datasets.ImageFolder(test_dir, transform=self.eval_transform)
         test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False,
                                  num_workers=NUM_WORKERS, pin_memory=True)
 
         self.model.eval()
-        results = []
         all_preds = []
         all_labels = []
-        global_idx = 0
-        all_batch_latencies = []  # latenze per batch, poi media ponderata
+        all_batch_latencies = []  # per-batch latencies, later averaged
 
         with torch.no_grad():
             for images, labels in test_loader:
@@ -188,41 +178,25 @@ class GestureClassifierCNN:
                     torch.cuda.synchronize()
                 img_latency_ms = (time.perf_counter() - t0) * 1000 / bs
 
-                all_batch_latencies.extend([img_latency_ms] * bs)  # una voce per immagine
+                all_batch_latencies.extend([img_latency_ms] * bs)  # one entry per image
 
-                preds = outputs.argmax(1).cpu().numpy()
-                labels_cpu = labels.numpy()
-                all_preds.extend(preds)
-                all_labels.extend(labels_cpu)
+                all_preds.extend(outputs.argmax(1).cpu().numpy())
+                all_labels.extend(labels.numpy())
 
-                for j in range(bs):
-                    results.append({
-                        'sample_index': global_idx,
-                        'true_label': labels_cpu[j],
-                        'pred_label': preds[j],
-                        'is_correct': 1 if preds[j] == labels_cpu[j] else 0,
-                        'latency_ms': img_latency_ms
-                    })
-                    global_idx += 1
+        # Per-image CSV (for McNemar)
+        save_per_sample_csv(all_labels, all_preds, all_batch_latencies, output_csv)
 
-        # ── CSV per immagine (McNemar) ────────────────────────────────────────
-        with open(output_csv, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=results[0].keys())
-            writer.writeheader()
-            writer.writerows(results)
-        print(f"[OK] {len(results)} risultati per-immagine salvati in: {output_csv}")
-
-        # ── Latenza media globale ─────────────────────────────────────────────
+        # Global average latency
         avg_latency = np.mean(all_batch_latencies)
-        print(f"Latenza media per immagine: {avg_latency:.3f} ms")
+        print(f"Average latency per image: {avg_latency:.3f} ms")
 
-        # ── CSV metriche aggregate ────────────────────────────────────────────
+        # Aggregate metrics CSV
         save_metrics_csv(all_labels, all_preds, GESTURE_NAMES,
                          avg_latency_ms=avg_latency,
                          output_csv=metrics_csv)
 
         report = classification_report(all_labels, all_preds, target_names=GESTURE_NAMES)
-        print("\nReport Finale:\n", report)
+        print("\nFinal report:\n", report)
 
         return confusion_matrix(all_labels, all_preds)
 
@@ -243,7 +217,7 @@ if __name__ == "__main__":
     class MockHistory:
         def __init__(self, h): self.history = h
 
-    # Salva i grafici su disco invece di mostrarli interattivamente
+    # Save the plots to disk instead of showing them interactively
     plot_training_history(MockHistory(history_raw), save_path="plots/cnn_training_history.png")
 
     cm = classifier.evaluate(
@@ -256,4 +230,4 @@ if __name__ == "__main__":
     plot_confusion_matrix(cm, GESTURE_NAMES, save_path="plots/cnn_confusion_matrix.png")
 
     torch.save(classifier.model.state_dict(), "gesture_cnn_finetuned.pth")
-    print("\n[FINISH] Pipeline completata.")
+    print("\n[FINISH] Pipeline complete.")

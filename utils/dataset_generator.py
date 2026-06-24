@@ -6,7 +6,7 @@ import multiprocessing as python_mp
 from pathlib import Path
 from utility import *
 
-# Silenzia i log Python-side prima di qualsiasi import MP/TF
+# Silence Python-side logs before any MediaPipe/TF import
 os.environ["GLOG_minloglevel"] = "3"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["MEDIAPIPE_DISABLE_GPU"] = "1"
@@ -27,17 +27,15 @@ CSV_FLUSH_EVERY = 2_000
 
 
 def _suppress_stderr():
-    """
-    Redirige stderr a /dev/null a livello di OS.
-    Blocca anche i log scritti direttamente in C++ da TFLite/MediaPipe.
-    """
+    """Redirect stderr to /dev/null at the OS level.
+    Also blocks logs written directly from C++ by TFLite/MediaPipe."""
     devnull = os.open(os.devnull, os.O_WRONLY)
     os.dup2(devnull, sys.stderr.fileno())
     os.close(devnull)
 
 
 def _normalize_landmarks(landmark_list: list) -> list:
-    """Normalizza i landmark 3D (X, Y, Z) rispetto al polso."""
+    """Normalize the 3D landmarks (X, Y, Z) with respect to the wrist."""
     base_x, base_y, base_z = landmark_list[0][0], landmark_list[0][1], landmark_list[0][2]
 
     shifted = []
@@ -56,10 +54,8 @@ def _normalize_landmarks(landmark_list: list) -> list:
 
 
 def _process_chunk(args: tuple) -> list:
-    """
-    Elabora un chunk di immagini.
-    Restituisce: Label + 63 coordinate + 10 angoli = 74 colonne totali.
-    """
+    """Process a chunk of images.
+    Returns: label + 63 coordinates + 10 angles = 74 columns total."""
     os.environ["GLOG_minloglevel"] = "3"
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     os.environ["MEDIAPIPE_DISABLE_GPU"] = "1"
@@ -95,11 +91,11 @@ def _process_chunk(args: tuple) -> list:
 
             if results.multi_hand_landmarks:
                 for hand_lms in results.multi_hand_landmarks:
-                    # 1. Punti pure per gli angoli (Mantiene le giuste proporzioni 3D)
+                    # Raw points for the angles (keeps the correct 3D proportions)
                     pure_points = [[lm.x, lm.y, lm.z] for lm in hand_lms.landmark]
                     angles = calculate_finger_angles(pure_points)
 
-                    # 2. Punti in scala pixel per la normalizzazione posizionale
+                    # Pixel-scaled points for positional normalization
                     raw_points = [
                         [
                             min(int(lm.x * w), w - 1),
@@ -110,7 +106,7 @@ def _process_chunk(args: tuple) -> list:
                     ]
                     normalized = _normalize_landmarks(raw_points)
 
-                    # 3. Combina tutto: Label + 63 feature spaziali + 10 feature angolari
+                    # Combine everything: label + 63 spatial features + 10 angle features
                     final_features = normalized + angles
                     rows.append([label, *final_features])
     finally:
@@ -125,21 +121,21 @@ def _chunked(lst: list, n: int):
 
 
 # ---------------------------------------------------------------------------
-# Classe principale
+# Main class
 # ---------------------------------------------------------------------------
 
 class DatasetBuilder:
 
     def split_images(self) -> bool:
         if not os.path.exists(INPUT_FOLDER):
-            print(f"[ERROR] Directory '{INPUT_FOLDER}' non trovata.")
+            print(f"[ERROR] Directory '{INPUT_FOLDER}' not found.")
             return False
 
-        print(f"\n[INFO] Split dataset da '{INPUT_FOLDER}'...")
+        print(f"\n[INFO] Splitting dataset from '{INPUT_FOLDER}'...")
         t0 = time.time()
         splitfolders.ratio(INPUT_FOLDER, output=OUTPUT_FOLDER,
                            seed=1337, ratio=(.8, .1, .1), move=False)
-        print(f"[OK] Split completato in {time.time() - t0:.2f}s → '{OUTPUT_FOLDER}'")
+        print(f"[OK] Split complete in {time.time() - t0:.2f}s -> '{OUTPUT_FOLDER}'")
         return True
 
     def generate_csv_from_split(self, split_name: str) -> None:
@@ -147,10 +143,10 @@ class DatasetBuilder:
         csv_file_path = Path(CSV_DIR) / f"{split_name}_keypoint.csv"
 
         if not split_path.exists():
-            print(f"[WARN] Cartella '{split_path}' non trovata. Skip.")
+            print(f"[WARN] Folder '{split_path}' not found. Skipping.")
             return
 
-        print(f"\n[INFO] Generazione CSV per '{split_name}' → {csv_file_path}")
+        print(f"\n[INFO] Generating CSV for '{split_name}' -> {csv_file_path}")
         t_split = time.time()
         Path(CSV_DIR).mkdir(parents=True, exist_ok=True)
 
@@ -168,7 +164,7 @@ class DatasetBuilder:
                 try:
                     label = int(folder.name.split('_')[0])
                 except ValueError:
-                    print(f"  [WARN] Nome cartella non valido: {folder.name}. Skip.")
+                    print(f"  [WARN] Invalid folder name: {folder.name}. Skipping.")
                     continue
 
                 img_paths = [
@@ -176,7 +172,7 @@ class DatasetBuilder:
                     if p.is_file() and p.suffix.lower() in {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
                 ]
                 num_images = len(img_paths)
-                print(f"  → Classe {label} ({folder.name}): {num_images} immagini")
+                print(f"  -> Class {label} ({folder.name}): {num_images} images")
 
                 if num_images == 0:
                     continue
@@ -202,7 +198,7 @@ class DatasetBuilder:
 
                 rate = detected_in_class / num_images * 100 if num_images else 0
                 print(
-                    f"     [OK] {time.time() - t_class:.2f}s | Rilevati: {detected_in_class}/{num_images} ({rate:.1f}%)")
+                    f"     [OK] {time.time() - t_class:.2f}s | Detected: {detected_in_class}/{num_images} ({rate:.1f}%)")
 
                 total_images += num_images
                 total_detected += detected_in_class
@@ -210,7 +206,7 @@ class DatasetBuilder:
         elapsed = time.time() - t_split
         rate = total_detected / total_images * 100 if total_images else 0
         print(
-            f"[SUMMARY] '{split_name}' → {elapsed:.2f}s | {total_detected}/{total_images} hands salvate ({rate:.1f}%)")
+            f"[SUMMARY] '{split_name}' -> {elapsed:.2f}s | {total_detected}/{total_images} hands saved ({rate:.1f}%)")
 
 
 if __name__ == "__main__":
@@ -218,7 +214,7 @@ if __name__ == "__main__":
 
     t0 = time.time()
     print("=" * 60)
-    print(" DATASET BUILDER (COORD + ANGOLI)  ")
+    print(" DATASET BUILDER (COORDS + ANGLES)  ")
     print("=" * 60)
     print(f" Workers  : {NUM_WORKERS}")
     print(f" Chunk    : {CHUNK_SIZE} img/task")
@@ -232,8 +228,8 @@ if __name__ == "__main__":
 
         elapsed = time.time() - t0
         print("\n" + "=" * 60)
-        print(" COMPLETATO ")
-        print(f" Tempo totale : {elapsed:.2f}s ({elapsed / 60:.2f} min)")
+        print(" COMPLETE ")
+        print(f" Total time : {elapsed:.2f}s ({elapsed / 60:.2f} min)")
         print("=" * 60)
     else:
-        print("\n[ERROR] Processo interrotto: cartella input mancante.")
+        print("\n[ERROR] Process aborted: input folder missing.")

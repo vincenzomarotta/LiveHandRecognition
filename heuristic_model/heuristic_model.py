@@ -1,97 +1,94 @@
 import os
 import math
 import time
-import csv
 import numpy as np
 import concurrent.futures
 from utils.utility import *
+from utils.metrics import (GESTURE_NAMES, plot_confusion_matrix, save_metrics_csv,
+                           save_per_sample_csv)
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-
-from nn_model.load_and_plot import plot_confusion_matrix, save_metrics_csv
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TRAIN_FILE = os.path.join(project_root, "dataset", "train_keypoint.csv")
-VAL_FILE   = os.path.join(project_root, "dataset", "val_keypoint.csv")
-TEST_FILE  = os.path.join(project_root, "dataset", "test_keypoint.csv")
-
-GESTURE_NAMES = [
-    'CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK',
-    'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK', 'STOP', 'THREE', 'TWO', 'NO GESTURE'
-]
+VAL_FILE = os.path.join(project_root, "dataset", "val_keypoint.csv")
+TEST_FILE = os.path.join(project_root, "dataset", "test_keypoint.csv")
 
 
 class HeuristicClassifier:
+    # Finger states
     NOSTATE = 0; STRAIGHT = 1; BENT = 2; CROSSED = 3
-    CALL=0; DISLIKE=1; CLOSED_FIST=2; FOUR=3; LIKE=4; MUTE=5; OK=6
-    POINTING_UP=7; OPEN_PALM=8; VICTORY=9; ROCK=10; STOP=11
-    THREE=12; TWO=13; NO_GESTURE=14
+    # Gesture codes
+    CALL = 0; DISLIKE = 1; CLOSED_FIST = 2; FOUR = 3; LIKE = 4; MUTE = 5; OK = 6
+    POINTING_UP = 7; OPEN_PALM = 8; VICTORY = 9; ROCK = 10; STOP = 11
+    THREE = 12; TWO = 13; NO_GESTURE = 14
 
     def __init__(self, frame_size):
-        self.frame_width  = frame_size[0]
+        self.frame_width = frame_size[0]
         self.frame_height = frame_size[1]
-        self._pts2       = None
-        self._ref_shape  = None
+        self._pts2 = None
+        self._ref_shape = None
         self._homo_valid = False
         self._init_homography_reference()
 
     def _init_homography_reference(self):
-        current_dir  = os.path.dirname(os.path.abspath(__file__))
+        current_dir = os.path.dirname(os.path.abspath(__file__))
         ref_img_path = os.path.join(current_dir, 'HomographyRef.png')
-        ref_img      = cv2.imread(ref_img_path, 0)
+        ref_img = cv2.imread(ref_img_path, 0)
         if ref_img is None:
-            print(f"[WARN] HomographyRef.png non trovato in: {ref_img_path}")
+            print(f"[WARN] HomographyRef.png not found at: {ref_img_path}")
             return
         circles = cv2.HoughCircles(
             ref_img, cv2.HOUGH_GRADIENT, 1, 46,
             param1=50, param2=1, minRadius=4, maxRadius=30
         )
         if circles is None:
-            print("[WARN] Nessun cerchio trovato in HomographyRef.png")
+            print("[WARN] No circle found in HomographyRef.png")
             return
         dict_circles = {}
         for (x, y, r) in np.uint16(np.round(circles[0, :])):
             dict_circles[r] = (x, y)
-        self._pts2      = np.float32([v for _, v in sorted(dict_circles.items())])
+        self._pts2 = np.float32([v for _, v in sorted(dict_circles.items())])
         self._ref_shape = ref_img.shape
         self._homo_valid = True
-        print(f"[OK] Homography reference caricata ({len(self._pts2)} punti)")
+        print(f"[OK] Homography reference loaded ({len(self._pts2)} points)")
 
     def perspective_correction(self, frame, landmarks):
         if not self._homo_valid:
             return None, frame
         pts1 = np.float32([[landmarks[0][:2]], [landmarks[5][:2]],
                             [landmarks[9][:2]], [landmarks[17][:2]]])
-        h      = cv2.getPerspectiveTransform(pts1, self._pts2[:4])
+        h = cv2.getPerspectiveTransform(pts1, self._pts2[:4])
         im_out = cv2.warpPerspective(frame, h, (self._ref_shape[1], self._ref_shape[0]))
         return h, im_out
 
     def transform_points(self, landmarks, h):
         points = np.float32([[[lm[0], lm[1]]] for lm in landmarks])
-        transformed    = cv2.perspectiveTransform(points, h).squeeze()
+        transformed = cv2.perspectiveTransform(points, h).squeeze()
         transformed_3d = np.zeros((transformed.shape[0], 3))
         transformed_3d[:, :2] = transformed
         return transformed_3d
 
     def process(self, landmarks):
-        landmarks  = np.array(landmarks, dtype=np.float64)
-        hand_img   = np.ones((self.frame_width, self.frame_height)) * 255
-        hand_img   = draw_hand(hand_img, landmarks)
-        state      = np.ones(5) * -1
-        center_kp  = (landmarks[5] + landmarks[9] + landmarks[17]) / 3.0
-        norm_lm    = normalize_wrt_keypoint(landmarks, center_kp)
-        origin_2d  = np.zeros(2)
+        landmarks = np.array(landmarks, dtype=np.float64)
+        hand_img = np.ones((self.frame_width, self.frame_height)) * 255
+        hand_img = draw_hand(hand_img, landmarks)
+        state = np.ones(5) * -1
+        center_kp = (landmarks[5] + landmarks[9] + landmarks[17]) / 3.0
+        norm_lm = normalize_wrt_keypoint(landmarks, center_kp)
+        origin_2d = np.zeros(2)
 
+        # A fingertip far from the palm center counts as straight, otherwise bent
         for i, lm_idx in enumerate([4, 8, 12, 16, 20]):
-            lm     = norm_lm[lm_idx]
-            d      = math.hypot(lm[0] - origin_2d[0], lm[1] - origin_2d[1])
+            lm = norm_lm[lm_idx]
+            d = math.hypot(lm[0] - origin_2d[0], lm[1] - origin_2d[1])
             state[i] = self.STRAIGHT if d > 0.6 else self.BENT
 
+        # Use homography to detect a thumb crossed over the palm
         h, _ = self.perspective_correction(hand_img, landmarks)
         if h is not None:
             transformed = self.transform_points([landmarks[0], landmarks[1], landmarks[5]], h)
-            norm_tr     = normalize_wrt_keypoint(transformed, transformed[0])
+            norm_tr = normalize_wrt_keypoint(transformed, transformed[0])
             if angle_between(norm_tr[1], norm_tr[2]) < 0.8:
                 state[0] = self.CROSSED
 
@@ -131,8 +128,8 @@ class HeuristicClassifier:
         return self.NO_GESTURE
 
     def _preprocess_row(self, row):
-        """Converte una riga del CSV in lista di landmark 3D."""
-        fw, fh    = self.frame_height, self.frame_width
+        """Convert a CSV row into a list of 3D landmarks."""
+        fw, fh = self.frame_height, self.frame_width
         coords_3d = row[:63].reshape((21, 3))
         landmarks = []
         for j in range(21):
@@ -147,57 +144,40 @@ class HeuristicClassifier:
     def evaluate(self, X_test, y_test, matrix=True, n_jobs=4,
                  output_csv="test_results_heuristic.csv",
                  metrics_csv="metrics_summary_heuristic.csv"):
-        """
-        Valuta il classificatore euristico producendo:
-        - CSV per-sample con is_correct e latency_ms  (per McNemar)
-        - CSV metriche aggregate (precision/recall/f1 + latenza media)
-        - Confusion matrix salvata su disco
+        """Evaluate the heuristic classifier, producing:
+        - a per-sample CSV with is_correct and latency_ms (for McNemar)
+        - an aggregate metrics CSV (precision/recall/f1 + average latency)
+        - a confusion matrix saved to disk
         """
         n = X_test.shape[0]
-        print(f"\n[INFO] Valutazione su {n} sample con {n_jobs} thread...")
+        print(f"\n[INFO] Evaluating {n} samples with {n_jobs} threads...")
 
-        # ── Pre-processing landmark ───────────────────────────────────────────
         all_landmarks = [self._preprocess_row(X_test[i]) for i in range(n)]
 
-        # ── Inferenza parallela con latenza per-sample ────────────────────────
-        # Misuriamo la latenza su ogni singolo sample perché nell'uso reale
-        # il classificatore riceve un frame alla volta dal loop webcam.
+        # Parallel inference with per-sample latency: in real use the classifier
+        # receives one frame at a time from the webcam loop.
         results_raw = [None] * n
 
         def process_timed(idx):
             lm = all_landmarks[idx]
             t0 = time.perf_counter()
             pred = self.process(lm)
-            lat  = (time.perf_counter() - t0) * 1000
+            lat = (time.perf_counter() - t0) * 1000
             return idx, pred, lat
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_jobs) as ex:
             for idx, pred, lat in ex.map(process_timed, range(n)):
                 results_raw[idx] = (pred, lat)
 
-        y_pred    = np.array([r[0] for r in results_raw])
+        y_pred = np.array([r[0] for r in results_raw])
         latencies = np.array([r[1] for r in results_raw])
-        avg_lat   = float(np.mean(latencies))
-        print(f"Latenza media per sample: {avg_lat:.4f} ms")
+        avg_lat = float(np.mean(latencies))
+        print(f"Average latency per sample: {avg_lat:.4f} ms")
 
-        # ── CSV per-sample (McNemar) ──────────────────────────────────────────
-        rows = [
-            {
-                'sample_index': i,
-                'true_label':   int(y_test[i]),
-                'pred_label':   int(y_pred[i]),
-                'is_correct':   1 if y_pred[i] == y_test[i] else 0,
-                'latency_ms':   round(latencies[i], 4)
-            }
-            for i in range(n)
-        ]
-        with open(output_csv, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=rows[0].keys())
-            writer.writeheader()
-            writer.writerows(rows)
-        print(f"[OK] {n} risultati per-sample salvati in: {output_csv}")
+        # Per-sample CSV (for McNemar)
+        save_per_sample_csv(y_test, y_pred, latencies, output_csv)
 
-        # ── CSV metriche aggregate ────────────────────────────────────────────
+        # Aggregate metrics CSV
         save_metrics_csv(
             y_test, y_pred,
             class_names=GESTURE_NAMES,
@@ -205,7 +185,7 @@ class HeuristicClassifier:
             output_csv=metrics_csv
         )
 
-        # ── Report testuale ───────────────────────────────────────────────────
+        # Text report
         present = sorted(set(y_test))
         print('\n--- Classification Report ---')
         print(classification_report(
@@ -215,7 +195,7 @@ class HeuristicClassifier:
             zero_division=0
         ))
 
-        # ── Confusion matrix ──────────────────────────────────────────────────
+        # Confusion matrix
         if matrix:
             cm = confusion_matrix(y_test, y_pred, labels=present)
             plot_confusion_matrix(
@@ -224,7 +204,7 @@ class HeuristicClassifier:
                 save_path="plots/heuristic_confusion_matrix.png"
             )
 
-        print("[INFO] Valutazione completata.\n")
+        print("[INFO] Evaluation complete.\n")
 
 
 if __name__ == '__main__':

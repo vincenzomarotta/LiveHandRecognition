@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from statsmodels.stats.contingency_tables import mcnemar
 
-# Import dei modelli per calcolare la latenza "dal vivo"
+# Import the models to benchmark live inference latency
 from nn_model.nn_model import GestureClassifierNN
 from cnn_model.cnn_model import GestureClassifierCNN
 from heuristic_model.heuristic_model import HeuristicClassifier
@@ -13,77 +13,77 @@ from heuristic_model.heuristic_model import HeuristicClassifier
 
 def perform_master_analysis():
     print("=" * 75)
-    print(" MASTER SCRIPT: ANALISI PAIRWISE (CNN vs NN vs EURISTICO) + EFFICIENZA")
+    print(" MASTER SCRIPT: PAIRWISE ANALYSIS (CNN vs NN vs HEURISTIC) + EFFICIENCY")
     print("=" * 75)
 
     project_root = os.path.dirname(os.path.abspath(__file__))
     CSV_H2H = os.path.join(project_root, "head_to_head_results.csv")
     NN_WEIGHTS = os.path.join(project_root, "nn_model", "gesture_nn_model.pth")
     CNN_WEIGHTS = os.path.join(project_root, "cnn_model", "gesture_cnn_finetuned.pth")
-    OUTPUT_CSV = os.path.join(project_root, "sommario_risultati_tesi_pairwise.csv")
+    OUTPUT_CSV = os.path.join(project_root, "pairwise_results_summary.csv")
 
     final_results = []
 
     # -----------------------------------------------------------------
-    # PARTE 1: ANALISI STATISTICA PAIRWISE (McNemar)
+    # PART 1: PAIRWISE STATISTICAL ANALYSIS (McNemar)
     # -----------------------------------------------------------------
-    print("\n[1/3] Lettura dati e Test di McNemar a Coppie...")
+    print("\n[1/3] Reading data and running pairwise McNemar tests...")
     try:
         df = pd.read_csv(CSV_H2H)
     except FileNotFoundError:
-        print(f"[ERRORE] File non trovato: {CSV_H2H}")
-        print("Esegui test_head_to_head_3way.py prima di questo script.")
+        print(f"[ERROR] File not found: {CSV_H2H}")
+        print("Run test_head_to_head.py before this script.")
         return
 
-    # Usiamo il test Filtrato (solo quando MediaPipe trova la mano)
-    # per avere un confronto leale sulle logiche interne dei 3 modelli
-    print("Nota: Il confronto statistico viene effettuato sui casi in cui la mano è visibile.")
+    # The statistical comparison uses only cases where MediaPipe found the hand,
+    # for a fair comparison of the three models' internal logic.
+    print("Note: the statistical comparison is run on cases where the hand is visible.")
 
-    # 1. Scontro: CNN vs NN
+    # 1. CNN vs NN
     final_results.extend(analyze_pairwise(df, "CNN", "cnn_correct", "NN", "nn_correct", filter_mp_failures=True))
 
-    # 2. Scontro: CNN vs Euristico
+    # 2. CNN vs Heuristic
     final_results.extend(
-        analyze_pairwise(df, "CNN", "cnn_correct", "Euristico", "euristico_correct", filter_mp_failures=True))
+        analyze_pairwise(df, "CNN", "cnn_correct", "Heuristic", "euristico_correct", filter_mp_failures=True))
 
-    # 3. Scontro: NN vs Euristico
+    # 3. NN vs Heuristic
     final_results.extend(
-        analyze_pairwise(df, "NN", "nn_correct", "Euristico", "euristico_correct", filter_mp_failures=True))
+        analyze_pairwise(df, "NN", "nn_correct", "Heuristic", "euristico_correct", filter_mp_failures=True))
 
     # -----------------------------------------------------------------
-    # PARTE 2: EFFICIENZA SPAZIALE - PESO SUL DISCO (MB)
+    # PART 2: SPATIAL EFFICIENCY - ON-DISK SIZE (MB)
     # -----------------------------------------------------------------
-    print("\n[2/3] Calcolo dimensione modelli su disco...")
+    print("\n[2/3] Computing on-disk model sizes...")
 
     size_mb_nn = os.path.getsize(NN_WEIGHTS) / (1024 * 1024) if os.path.exists(NN_WEIGHTS) else 0
     size_mb_cnn = os.path.getsize(CNN_WEIGHTS) / (1024 * 1024) if os.path.exists(CNN_WEIGHTS) else 0
-    size_mb_heur = 0.0  # L'euristico è solo codice, non ha un file .pth di pesi
+    size_mb_heur = 0.0  # the heuristic is pure code, no .pth weights file
 
-    print(f"  -> Euristico: {size_mb_heur:.4f} MB (Solo Codice Sorgente)")
+    print(f"  -> Heuristic: {size_mb_heur:.4f} MB (source code only)")
     print(f"  -> NN       : {size_mb_nn:.4f} MB")
     print(f"  -> CNN      : {size_mb_cnn:.4f} MB")
 
     final_results.extend([
-        {"Categoria": "Efficienza Spaziale (Memoria)", "Metrica": "Peso Modello Euristico",
-         "Valore": f"{size_mb_heur:.4f} MB", "Note": "Nessun parametro appreso"},
-        {"Categoria": "Efficienza Spaziale (Memoria)", "Metrica": "Peso Modello NN", "Valore": f"{size_mb_nn:.4f} MB",
-         "Note": "Rete 1D su Keypoints"},
-        {"Categoria": "Efficienza Spaziale (Memoria)", "Metrica": "Peso Modello CNN", "Valore": f"{size_mb_cnn:.4f} MB",
-         "Note": "MobileNetV3 Fine-Tuned"}
+        {"Category": "Spatial Efficiency (Memory)", "Metric": "Heuristic Model Size",
+         "Value": f"{size_mb_heur:.4f} MB", "Note": "No learned parameters"},
+        {"Category": "Spatial Efficiency (Memory)", "Metric": "NN Model Size", "Value": f"{size_mb_nn:.4f} MB",
+         "Note": "1D network on keypoints"},
+        {"Category": "Spatial Efficiency (Memory)", "Metric": "CNN Model Size", "Value": f"{size_mb_cnn:.4f} MB",
+         "Note": "MobileNetV3 fine-tuned"}
     ])
 
     # -----------------------------------------------------------------
-    # PARTE 3: EFFICIENZA TEMPORALE - LATENZA DI INFERENZA (ms)
+    # PART 3: TEMPORAL EFFICIENCY - INFERENCE LATENCY (ms)
     # -----------------------------------------------------------------
-    print("\n[3/3] Benchmark Latenza (Inferenza a batch=1)...")
+    print("\n[3/3] Latency benchmark (inference at batch=1)...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     num_runs = 500
     warmup_runs = 50
 
-    # Latenza Euristico
-    print("  -> Benchmark Euristico in corso...")
+    # Heuristic latency
+    print("  -> Benchmarking heuristic...")
     heur_model = HeuristicClassifier((1920, 1080))
-    # Creiamo 21 landmark dummy (x, y, z)
+    # 21 dummy landmarks (x, y, z)
     dummy_input_heur = [np.array([np.random.randint(0, 100), np.random.randint(0, 100), np.random.rand()]) for _ in
                         range(21)]
 
@@ -95,10 +95,10 @@ def perform_master_analysis():
         _ = heur_model.process(dummy_input_heur)
         latencies_heur.append((time.perf_counter() - t0) * 1000)
     avg_lat_heur = np.mean(latencies_heur)
-    print(f"  -> Latenza Media Euristico : {avg_lat_heur:.3f} ms")
+    print(f"  -> Average heuristic latency : {avg_lat_heur:.3f} ms")
 
-    # Latenza NN
-    print("  -> Benchmark NN in corso...")
+    # NN latency
+    print("  -> Benchmarking NN...")
     nn_model = GestureClassifierNN(input_dim=73, num_classes=15)
     dummy_input_nn = [np.random.rand() for _ in range(73)]
     for _ in range(warmup_runs): _ = nn_model.predict(dummy_input_nn)
@@ -109,10 +109,10 @@ def perform_master_analysis():
         _ = nn_model.predict(dummy_input_nn)
         latencies_nn.append((time.perf_counter() - t0) * 1000)
     avg_lat_nn = np.mean(latencies_nn)
-    print(f"  -> Latenza Media NN        : {avg_lat_nn:.3f} ms")
+    print(f"  -> Average NN latency        : {avg_lat_nn:.3f} ms")
 
-    # Latenza CNN
-    print("  -> Benchmark CNN in corso...")
+    # CNN latency
+    print("  -> Benchmarking CNN...")
     cnn_model = GestureClassifierCNN(num_classes=15)
     cnn_model.model.eval()
     dummy_input_cnn = torch.randn(1, 3, 224, 224).to(device)
@@ -130,24 +130,24 @@ def perform_master_analysis():
             latencies_cnn.append((time.perf_counter() - t0) * 1000)
 
     avg_lat_cnn = np.mean(latencies_cnn)
-    print(f"  -> Latenza Media CNN       : {avg_lat_cnn:.3f} ms")
+    print(f"  -> Average CNN latency       : {avg_lat_cnn:.3f} ms")
 
     final_results.extend([
-        {"Categoria": "Efficienza Temporale (Velocità)", "Metrica": "Latenza Media Euristico",
-         "Valore": f"{avg_lat_heur:.3f} ms", "Note": "Esecuzione regole if-else (CPU)"},
-        {"Categoria": "Efficienza Temporale (Velocità)", "Metrica": "Latenza Media NN",
-         "Valore": f"{avg_lat_nn:.3f} ms", "Note": "Tempo elaborazione rete (CPU/GPU)"},
-        {"Categoria": "Efficienza Temporale (Velocità)", "Metrica": "Latenza Media CNN",
-         "Valore": f"{avg_lat_cnn:.3f} ms", "Note": "Tempo elaborazione End-to-End (GPU)"}
+        {"Category": "Temporal Efficiency (Speed)", "Metric": "Average Heuristic Latency",
+         "Value": f"{avg_lat_heur:.3f} ms", "Note": "if-else rule execution (CPU)"},
+        {"Category": "Temporal Efficiency (Speed)", "Metric": "Average NN Latency",
+         "Value": f"{avg_lat_nn:.3f} ms", "Note": "network processing time (CPU/GPU)"},
+        {"Category": "Temporal Efficiency (Speed)", "Metric": "Average CNN Latency",
+         "Value": f"{avg_lat_cnn:.3f} ms", "Note": "end-to-end processing time (GPU)"}
     ])
 
     # -----------------------------------------------------------------
-    # ESPORTAZIONE CSV
+    # CSV EXPORT
     # -----------------------------------------------------------------
-    print(f"\nSalvataggio report su CSV: {OUTPUT_CSV}...")
+    print(f"\nSaving report to CSV: {OUTPUT_CSV}...")
     results_df = pd.DataFrame(final_results)
     results_df.to_csv(OUTPUT_CSV, index=False, encoding='utf-8-sig')
-    print("[OK] Master CSV generato con successo! Pronto per la tesi.")
+    print("[OK] Master CSV generated successfully.")
     print("=" * 75)
 
 
@@ -156,33 +156,33 @@ def analyze_pairwise(df, name_a, col_a, name_b, col_b, filter_mp_failures):
 
     if filter_mp_failures:
         data = df[df['mediapipe_failed'] == 0]
-        desc = "(Su Mani Rilevate)"
+        desc = "(On Detected Hands)"
     else:
         data = df
-        desc = "(Inclusi Fallimenti)"
+        desc = "(Including Failures)"
 
     total = len(data)
 
-    # Preveniamo errori se le colonne mancano
+    # Guard against missing columns
     if col_a not in data.columns or col_b not in data.columns:
-        print(f"[ERRORE] Colonne {col_a} o {col_b} mancanti nel CSV.")
+        print(f"[ERROR] Columns {col_a} or {col_b} missing in the CSV.")
         return results
 
     vec_a = data[col_a].astype(bool)
     vec_b = data[col_b].astype(bool)
 
-    # Tabella di contingenza
+    # Contingency table
     a = np.sum(vec_a & vec_b)
-    b = np.sum(vec_a & ~vec_b)  # Solo Modello A ha indovinato
-    c = np.sum(~vec_a & vec_b)  # Solo Modello B ha indovinato
+    b = np.sum(vec_a & ~vec_b)  # only model A correct
+    c = np.sum(~vec_a & vec_b)  # only model B correct
     d = np.sum(~vec_a & ~vec_b)
 
     table = [[a, b], [c, d]]
     result = mcnemar(table, exact=False, correction=True)
 
-    prefix = f"Scontro: {name_a} vs {name_b} {desc}"
+    prefix = f"Match: {name_a} vs {name_b} {desc}"
 
-    # Accuratezze specifiche di questo set di dati
+    # Accuracy on this dataset
     acc_a = (a + b) / total * 100
     acc_b = (a + c) / total * 100
 
@@ -191,21 +191,21 @@ def analyze_pairwise(df, name_a, col_a, name_b, col_b, filter_mp_failures):
     elif c > b:
         winner = name_b
     else:
-        winner = "Pareggio Assoluto"
+        winner = "Exact Tie"
 
     is_significant = result.pvalue < 0.05
-    esito = f"Vince {winner}" if is_significant else "Equivalenti (Non Significativo)"
+    outcome = f"{winner} wins" if is_significant else "Equivalent (Not Significant)"
 
     results.extend([
-        {"Categoria": prefix, "Metrica": f"Accuratezza {name_a}", "Valore": f"{acc_a:.2f}%", "Note": ""},
-        {"Categoria": prefix, "Metrica": f"Accuratezza {name_b}", "Valore": f"{acc_b:.2f}%", "Note": ""},
-        {"Categoria": prefix, "Metrica": f"Solo {name_a} Corretto (b)", "Valore": str(b),
-         "Note": f"Disaccordo pro {name_a}"},
-        {"Categoria": prefix, "Metrica": f"Solo {name_b} Corretto (c)", "Valore": str(c),
-         "Note": f"Disaccordo pro {name_b}"},
-        {"Categoria": prefix, "Metrica": "McNemar: P-Value", "Valore": f"{result.pvalue:.10f}",
-         "Note": "< 0.05 significa divario reale"},
-        {"Categoria": prefix, "Metrica": "Esito Scontro", "Valore": esito, "Note": ""}
+        {"Category": prefix, "Metric": f"Accuracy {name_a}", "Value": f"{acc_a:.2f}%", "Note": ""},
+        {"Category": prefix, "Metric": f"Accuracy {name_b}", "Value": f"{acc_b:.2f}%", "Note": ""},
+        {"Category": prefix, "Metric": f"Only {name_a} Correct (b)", "Value": str(b),
+         "Note": f"Disagreement favoring {name_a}"},
+        {"Category": prefix, "Metric": f"Only {name_b} Correct (c)", "Value": str(c),
+         "Note": f"Disagreement favoring {name_b}"},
+        {"Category": prefix, "Metric": "McNemar: P-Value", "Value": f"{result.pvalue:.10f}",
+         "Note": "< 0.05 means a real gap"},
+        {"Category": prefix, "Metric": "Match Outcome", "Value": outcome, "Note": ""}
     ])
 
     return results

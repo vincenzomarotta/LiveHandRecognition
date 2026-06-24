@@ -5,26 +5,22 @@ from torch.utils.data import TensorDataset, DataLoader
 from sklearn.metrics import confusion_matrix, classification_report
 import numpy as np
 import time
-import csv
-
-from nn_model.load_and_plot import *
 import os
+
+from utils.metrics import (GESTURE_NAMES, load_dataset, plot_training_history,
+                           plot_confusion_matrix, save_metrics_csv, save_per_sample_csv)
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TRAIN_FILE = os.path.join(project_root, "dataset", "train_keypoint.csv")
 VAL_FILE = os.path.join(project_root, "dataset", "val_keypoint.csv")
 TEST_FILE = os.path.join(project_root, "dataset", "test_keypoint.csv")
 
-GESTURE_NAMES = [
-    'CALL', 'DISLIKE', 'FIST', 'FOUR', 'LIKE', 'MUTE', 'OK',
-    'POINTING UP', 'OPEN PALM', 'VICTORY', 'ROCK', 'STOP', 'THREE', 'TWO', 'NO GESTURE'
-]
-
 INPUT_DIM = 73
 NUM_CLASSES = 15
 
+
 class GestureNN(nn.Module):
-    """Definizione vera e propria del modello in PyTorch"""
+    """The PyTorch model definition itself."""
 
     def __init__(self, input_dim, num_classes):
         super(GestureNN, self).__init__()
@@ -44,9 +40,6 @@ class GestureNN(nn.Module):
 
 class GestureClassifierNN:
     def __init__(self, input_dim=INPUT_DIM, num_classes=NUM_CLASSES, learning_rate=0.001):
-        """
-        Inizializza la classe e sposta il modello sulla GPU (se disponibile).
-        """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = GestureNN(input_dim, num_classes).to(self.device)
         self.criterion = nn.CrossEntropyLoss()
@@ -54,10 +47,8 @@ class GestureClassifierNN:
         self.history_dict = {'accuracy': [], 'val_accuracy': [], 'loss': [], 'val_loss': []}
 
     def train(self, X_train, y_train, X_val, y_val, epochs=50, batch_size=32, patience=10):
-        """
-        Esegue l'addestramento con EARLY STOPPING e salvataggio dei pesi migliori.
-        """
-        print(f"--- Inizio Addestramento per {epochs} epoche su {self.device} ---")
+        """Train with early stopping and keep the best weights."""
+        print(f"--- Starting training for {epochs} epochs on {self.device} ---")
 
         X_train_t = torch.tensor(X_train, dtype=torch.float32)
         y_train_t = torch.tensor(y_train, dtype=torch.long)
@@ -69,13 +60,12 @@ class GestureClassifierNN:
 
         start_time = time.time()
 
-        # Variabili per l'Early Stopping
         best_val_loss = float('inf')
         epochs_no_improve = 0
         best_model_weights = None
 
         for epoch in range(epochs):
-            # --- FASE DI TRAINING ---
+            # Training phase
             self.model.train()
             running_loss, correct_train, total_train = 0.0, 0, 0
 
@@ -93,7 +83,7 @@ class GestureClassifierNN:
                 total_train += labels.size(0)
                 correct_train += (predicted == labels).sum().item()
 
-            # --- FASE DI VALIDATION ---
+            # Validation phase
             self.model.eval()
             val_loss, correct_val, total_val = 0.0, 0, 0
 
@@ -108,42 +98,39 @@ class GestureClassifierNN:
                     total_val += labels.size(0)
                     correct_val += (predicted == labels).sum().item()
 
-            # Calcolo delle metriche
             epoch_loss = running_loss / total_train
             epoch_acc = correct_train / total_train
             epoch_val_loss = val_loss / total_val
             epoch_val_acc = correct_val / total_val
 
-            # Salvataggio storia
             self.history_dict['loss'].append(epoch_loss)
             self.history_dict['accuracy'].append(epoch_acc)
             self.history_dict['val_loss'].append(epoch_val_loss)
             self.history_dict['val_accuracy'].append(epoch_val_acc)
 
             print(
-                f"Epoca [{epoch + 1}/{epochs}] | Loss: {epoch_loss:.4f} | Acc: {epoch_acc:.4f} | Val Loss: {epoch_val_loss:.4f} | Val Acc: {epoch_val_acc:.4f}")
+                f"Epoch [{epoch + 1}/{epochs}] | Loss: {epoch_loss:.4f} | Acc: {epoch_acc:.4f} | Val Loss: {epoch_val_loss:.4f} | Val Acc: {epoch_val_acc:.4f}")
 
-            # --- EARLY STOPPING ---
+            # Early stopping
             if epoch_val_loss < best_val_loss:
                 best_val_loss = epoch_val_loss
                 epochs_no_improve = 0
-                # Salva una copia profonda dei pesi attuali
                 best_model_weights = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
             else:
                 epochs_no_improve += 1
 
             if epochs_no_improve >= patience:
-                print(f"\n[!] Early Stopping innescato all'epoca {epoch + 1}.")
-                print(f"[!] Nessun miglioramento della validation loss per {patience} epoche consecutive.")
-                break  # Interrompe il ciclo delle epoche
+                print(f"\n[!] Early stopping triggered at epoch {epoch + 1}.")
+                print(f"[!] No validation-loss improvement for {patience} consecutive epochs.")
+                break
 
         end_time = time.time()
-        print(f"--- Addestramento completato in {end_time - start_time:.2f} secondi ---")
+        print(f"--- Training complete in {end_time - start_time:.2f} seconds ---")
 
-        # RIPRISTINO DEI PESI MIGLIORI
+        # Restore the best weights
         if best_model_weights is not None:
             self.model.load_state_dict(best_model_weights)
-            print("-> Pesi del modello ripristinati all'epoca con la migliore Validation Loss.")
+            print("-> Restored model weights from the epoch with the best validation loss.")
 
         class MockHistory:
             pass
@@ -155,20 +142,17 @@ class GestureClassifierNN:
     def evaluate_model(self, X_test, y_test,
                        output_csv="test_results_nn.csv",
                        metrics_csv="metrics_summary_nn.csv"):
+        """Evaluate the model on the test set, producing:
+        - a per-sample CSV with is_correct and latency_ms (for McNemar)
+        - an aggregate metrics CSV (precision/recall/f1 + average latency)
         """
-        Valuta il modello sul test set.
-        Produce:
-        - CSV per-immagine con is_correct e latency_ms (per McNemar)
-        - CSV metriche aggregate (precision/recall/f1 + latenza media)
-        """
-        print("--- Avvio Valutazione ---")
+        print("--- Starting evaluation ---")
 
         X_test_t = torch.tensor(X_test, dtype=torch.float32).to(self.device)
         self.model.eval()
 
-        # ── Inferenza per-sample per latenza realistica ───────────────────────
-        # La NN su landmark è così piccola che un batch unico non è rappresentativo
-        # della latenza reale nel loop webcam — misuriamo sample per sample
+        # Per-sample inference for realistic latency: the keypoint NN is so small
+        # that a single batch would not reflect the real webcam-loop latency.
         latencies = []
         all_outputs = []
 
@@ -186,26 +170,12 @@ class GestureClassifierNN:
         y_pred = outputs.argmax(1).cpu().numpy()
         avg_lat = float(np.mean(latencies))
 
-        print(f"Latenza media per frame: {avg_lat:.4f} ms")
+        print(f"Average latency per frame: {avg_lat:.4f} ms")
 
-        # ── CSV per-immagine (McNemar) ────────────────────────────────────────
-        results = [
-            {
-                'sample_index': i,
-                'true_label': int(y_test[i]),
-                'pred_label': int(y_pred[i]),
-                'is_correct': 1 if y_pred[i] == y_test[i] else 0,
-                'latency_ms': round(latencies[i], 4)
-            }
-            for i in range(len(y_test))
-        ]
-        with open(output_csv, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=results[0].keys())
-            writer.writeheader()
-            writer.writerows(results)
-        print(f"[OK] {len(results)} risultati per-immagine salvati in: {output_csv}")
+        # Per-sample CSV (for McNemar)
+        save_per_sample_csv(y_test, y_pred, latencies, output_csv)
 
-        # ── CSV metriche aggregate ────────────────────────────────────────────
+        # Aggregate metrics CSV
         save_metrics_csv(
             y_test, y_pred,
             class_names=GESTURE_NAMES,
@@ -216,7 +186,7 @@ class GestureClassifierNN:
         report = classification_report(y_test, y_pred,
                                        target_names=GESTURE_NAMES, zero_division=0)
         cm = confusion_matrix(y_test, y_pred)
-        print("\nReport di Classificazione:\n", report)
+        print("\nClassification report:\n", report)
 
         return {
             "average_inference_time_ms": avg_lat,
@@ -226,47 +196,41 @@ class GestureClassifierNN:
         }
 
     def summary(self):
-        """Stampa la struttura della rete e il conteggio dei parametri."""
+        """Print the network structure and the parameter count."""
         print(self.model)
         total_params = sum(p.numel() for p in self.model.parameters())
-        print(f"\nTotale parametri addestrabili: {total_params}")
+        print(f"\nTotal trainable parameters: {total_params}")
 
     def save(self, path):
-        """Salva i pesi del modello in formato PyTorch."""
+        """Save the model weights in PyTorch format."""
         torch.save(self.model.state_dict(), path)
 
     def load(self, path):
-        """Carica i pesi del modello salvato dal file .pth"""
-        # map_location serve nel caso in cui addestri su GPU ma testi su un PC senza GPU
+        """Load saved model weights from a .pth file."""
+        # map_location allows training on GPU but testing on a machine without one
         self.model.load_state_dict(torch.load(path, map_location=self.device))
-        self.model.eval()  # Mette il modello in modalità inferenza (disabilita dropout/batchnorm)
-        print(f"Pesi del modello caricati da: {path}")
+        self.model.eval()  # inference mode (disables dropout/batchnorm)
+        print(f"Model weights loaded from: {path}")
 
     def predict(self, single_landmark_list):
-        """
-        Prende in input la lista di 42 keypoint normalizzati,
-        la converte in tensore e restituisce l'ID della classe predetta.
-        """
+        """Take the list of normalized keypoint features, convert it to a tensor
+        and return the predicted class id."""
         self.model.eval()
 
-        # 1. PyTorch si aspetta i dati a "lotti" (batch).
-        # Convertiamo la lista in un tensore 2D di forma (1, 42) aggiungendo le parentesi quadre
+        # PyTorch expects batched input, so wrap the sample into shape (1, input_dim)
         input_tensor = torch.tensor([single_landmark_list], dtype=torch.float32).to(self.device)
 
-        # 2. Forward pass senza calcolare i gradienti (molto più veloce)
+        # Forward pass without gradients (much faster)
         with torch.no_grad():
             outputs = self.model(input_tensor)
-
-            # 3. Prendi l'indice con la probabilità massima
             _, predicted = torch.max(outputs.data, 1)
 
-        # 4. Converti il tensore in un normale intero Python
         return predicted.item()
 
 
 if __name__ == "__main__":
     if not torch.cuda.is_available():
-        print("Errore: Nessuna GPU CUDA rilevata.")
+        print("Error: no CUDA GPU detected.")
         exit(-1)
 
     print(f"GPU: {torch.cuda.get_device_name(0)}")
@@ -280,20 +244,20 @@ if __name__ == "__main__":
 
     history = classifier.train(
         X_train, y_train,
-        X_val,   y_val,
+        X_val, y_val,
         epochs=80, batch_size=32
     )
 
     plot_training_history(history, save_path="plots/nn_training_history.png")
 
-    risultati = classifier.evaluate_model(
+    results = classifier.evaluate_model(
         X_test, y_test,
         output_csv="test_results_nn.csv",
         metrics_csv="metrics_summary_nn.csv"
     )
 
-    plot_confusion_matrix(risultati["confusion_matrix"], GESTURE_NAMES,
+    plot_confusion_matrix(results["confusion_matrix"], GESTURE_NAMES,
                           save_path="plots/nn_confusion_matrix.png")
 
     classifier.save("gesture_nn_model.pth")
-    print("\nModello salvato. === PIPELINE COMPLETATA ===")
+    print("\nModel saved. === PIPELINE COMPLETE ===")
