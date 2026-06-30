@@ -1,4 +1,4 @@
-# LiveHandRecognition
+# Live Hand Gesture Recognition
 This is my project for Computer Vision exam @ Federico II. 
 Real-time hand-gesture recognition from a webcam, comparing **three different
 approaches** to the same 15-class problem: a hand-crafted **heuristic**
