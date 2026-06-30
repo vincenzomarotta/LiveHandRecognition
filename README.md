@@ -1,5 +1,5 @@
 # LiveHandRecognition
-
+This is my project for Computer Vision exam @ Federico II. 
 Real-time hand-gesture recognition from a webcam, comparing **three different
 approaches** to the same 15-class problem: a hand-crafted **heuristic**
 classifier, a small **neural network (NN)** over hand keypoints, and a
