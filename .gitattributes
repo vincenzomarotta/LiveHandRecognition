@@ -1,1 +1,5 @@
 src/core/** linguist-language=Python
+*.html linguist-detectable=false
+*.css linguist-detectable=false
+*.json linguist-detectable=false
+docs/** linguist-documentation=true
